@@ -6,13 +6,39 @@ export interface ClassificationResult {
   priority: 'Low' | 'Medium' | 'High';
 }
 
-// FIX: Initialize GoogleGenAI directly as per guidelines, assuming API_KEY is always present from environment variables.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Lazily initialize the AI client to prevent app crash on load if API_KEY is not set.
+let ai: GoogleGenAI | null = null;
+
+const getAiInstance = (): GoogleGenAI | null => {
+  if (ai) {
+    return ai;
+  }
+
+  // In deployment environments like Vercel, process.env.API_KEY might not be available
+  // on the client-side, causing a crash. This check prevents the crash.
+  if (!process.env.API_KEY) {
+    console.error("Gemini API key is not configured. Please set the API_KEY environment variable in your deployment settings.");
+    return null;
+  }
+
+  try {
+    ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    return ai;
+  } catch (error) {
+    console.error("Failed to initialize GoogleGenAI:", error);
+    return null;
+  }
+};
 
 export const classifyDocument = async (description: string): Promise<ClassificationResult | null> => {
-  // FIX: Removed conditional check for AI initialization to align with guidelines that API key is always available.
+  const aiInstance = getAiInstance();
+  if (!aiInstance) {
+    // Fallback if AI client fails to initialize.
+    return { category: 'Unclassified', priority: 'Medium' };
+  }
+
   try {
-    const response = await ai.models.generateContent({
+    const response = await aiInstance.models.generateContent({
       model: "gemini-2.5-flash",
       contents: `Based on the following document description, classify it into a relevant category (e.g., HR, Finance, Procurement, Academic, General) and assign a priority level (Low, Medium, High). Description: "${description}"`,
       config: {
@@ -29,7 +55,6 @@ export const classifyDocument = async (description: string): Promise<Classificat
               description: "The priority level. Must be one of: Low, Medium, High.",
             },
           },
-          // FIX: Use propertyOrdering as shown in the JSON response schema examples in the guidelines.
           propertyOrdering: ["category", "priority"],
         },
       },
