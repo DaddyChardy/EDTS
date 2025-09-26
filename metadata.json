@@ -1,0 +1,5 @@
+{
+  "name": "Enhanced Document Tracking System",
+  "description": "A web application to streamline the handling of internal and external documents within SDO Tandag City. It allows users to create, send, receive, track, and finalize documents with full audit logs.",
+  "requestFramePermissions": []
+}
