@@ -26,7 +26,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ documents, onDocumentSelec
         .slice(0, 5);
 
     return (
-        <div className="p-8 space-y-8">
+        <div className="p-4 sm:p-8 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard title="For Approval" value={pendingApproval} color="text-yellow-500" />
                 <StatCard title="Received" value={received} color="text-cyan-500" />

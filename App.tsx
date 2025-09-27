@@ -5,6 +5,7 @@ import { Dashboard } from './components/Dashboard';
 import { DocumentList } from './components/DocumentList';
 import { CreateDocumentForm } from './components/CreateDocumentForm';
 import { DocumentDetail } from './components/DocumentDetail';
+import { LoginPage } from './components/LoginPage';
 import { USERS, OFFICES, INITIAL_DOCUMENTS } from './constants';
 import { Document, Page, User, UserRole } from './types';
 
@@ -16,15 +17,18 @@ function App() {
   });
 
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  // Persist documents and user in localStorage to simulate a session
+  // Persist documents in localStorage
   const [documents, setDocuments] = useState<Document[]>(() => {
     const savedDocs = localStorage.getItem('documents');
     return savedDocs ? JSON.parse(savedDocs) : INITIAL_DOCUMENTS;
   });
-  const [currentUser, setCurrentUser] = useState<User>(() => {
+  
+  // Manage login state
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
       const savedUser = localStorage.getItem('currentUser');
-      return savedUser ? JSON.parse(savedUser) : USERS.find(u => u.id === 'user-richard') || USERS[0];
+      return savedUser ? JSON.parse(savedUser) : null;
   });
 
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
@@ -44,22 +48,32 @@ function App() {
   }, [documents]);
 
   useEffect(() => {
+    if (currentUser) {
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('currentUser');
+    }
   }, [currentUser]);
 
   const handleThemeToggle = () => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
   };
-
-  const handleUserChange = (userId: string) => {
+  
+  const handleLogin = (userId: string) => {
     const user = USERS.find(u => u.id === userId);
     if (user) {
       setCurrentUser(user);
+      setCurrentPage('dashboard');
     }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
   };
 
   const handleNavigate = (page: Page) => {
     setCurrentPage(page);
+    setIsSidebarOpen(false); // Close sidebar on navigation
     if (page !== 'detail') {
       setSelectedDocument(null);
     }
@@ -115,11 +129,12 @@ function App() {
 
 
   const renderContent = () => {
+    if (!currentUser) return null;
     switch (currentPage) {
       case 'dashboard':
         return <Dashboard documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />;
       case 'documents':
-        return <div className="p-8"><DocumentList documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} /></div>;
+        return <div className="p-4 sm:p-8"><DocumentList documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} /></div>;
       case 'create':
         return <CreateDocumentForm currentUser={currentUser} onAddDocument={handleAddDocument} onCancel={() => handleNavigate('dashboard')} allOffices={OFFICES.filter(o => o !== currentUser.office)} />;
       case 'detail':
@@ -139,19 +154,38 @@ function App() {
     }
   };
 
+  if (!currentUser) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
   return (
     <div className="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 min-h-screen">
-      <Sidebar currentPage={currentPage} onNavigate={handleNavigate} />
+      <Sidebar 
+        currentPage={currentPage} 
+        onNavigate={handleNavigate} 
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
       <Header 
         currentUser={currentUser} 
-        allUsers={USERS} 
-        onUserChange={handleUserChange} 
+        onLogout={handleLogout}
         theme={theme}
         onThemeToggle={handleThemeToggle}
+        onMenuClick={() => setIsSidebarOpen(true)}
       />
-      <main className="ml-64 pt-16">
+      <main className="lg:ml-64 pt-16">
         {renderContent()}
       </main>
+
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+          <div 
+              onClick={() => setIsSidebarOpen(false)}
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              aria-hidden="true"
+          ></div>
+      )}
+
 
       {/* Print Preview Modal */}
       {printPreviewDoc && (

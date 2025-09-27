@@ -155,7 +155,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
 
 
     return (
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-4 sm:p-8 max-w-7xl mx-auto">
             <button onClick={onBack} className="mb-6 text-sm font-medium text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300">
                 &larr; Back to documents
             </button>
@@ -163,12 +163,14 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-start flex-wrap gap-4">
                             <div>
-                                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{document.title}</h1>
+                                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">{document.title}</h1>
                                 <p className="text-sm font-mono text-slate-500 dark:text-slate-400 mt-1">{document.trackingNumber}</p>
                             </div>
-                            <StatusBadge status={document.status} />
+                            <div className="flex-shrink-0">
+                                <StatusBadge status={document.status} />
+                            </div>
                         </div>
                         <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <DetailItem label="Category" value={document.category} />
