@@ -4,16 +4,21 @@ import { classifyDocument, ClassificationResult } from '../services/geminiServic
 
 interface CreateDocumentFormProps {
   currentUser: User;
-  onAddDocument: (doc: Document) => void;
+  onAddDocument?: (doc: Document) => void;
+  onUpdateDocument?: (doc: Document) => void;
   onCancel: () => void;
   allOffices: string[];
+  documentToEdit?: Document;
 }
 
-export const CreateDocumentForm: React.FC<CreateDocumentFormProps> = ({ currentUser, onAddDocument, onCancel, allOffices }) => {
-  const [title, setTitle] = useState('');
-  const [recipientOffice, setRecipientOffice] = useState('');
-  const [description, setDescription] = useState('');
-  const [deliveryType, setDeliveryType] = useState<'Internal' | 'External'>('Internal');
+export const CreateDocumentForm: React.FC<CreateDocumentFormProps> = ({ currentUser, onAddDocument, onUpdateDocument, onCancel, allOffices, documentToEdit }) => {
+  const isEditMode = !!documentToEdit;
+
+  const [title, setTitle] = useState(documentToEdit?.title || '');
+  const [recipientOffice, setRecipientOffice] = useState(documentToEdit?.recipientOffice || '');
+  const [description, setDescription] = useState(documentToEdit?.description || '');
+  const [deliveryType, setDeliveryType] = useState<'Internal' | 'External'>(documentToEdit?.deliveryType || 'Internal');
+  
   const [aiSuggestion, setAiSuggestion] = useState<ClassificationResult | null>(null);
   const [isClassifying, setIsClassifying] = useState(false);
 
@@ -31,28 +36,43 @@ export const CreateDocumentForm: React.FC<CreateDocumentFormProps> = ({ currentU
     if (!title || !recipientOffice || !description) return;
 
     const now = new Date().toISOString();
-    const newDoc: Document = {
-      id: `doc-${Date.now()}`,
-      trackingNumber: `TDC-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 900) + 100).padStart(3, '0')}`,
-      title,
-      category: aiSuggestion?.category || 'General',
-      deliveryType,
-      recipientOffice,
-      sender: currentUser,
-      description,
-      status: DocumentStatus.DRAFT,
-      createdAt: now,
-      updatedAt: now,
-      history: [{
-        id: `h-${Date.now()}`,
-        timestamp: now,
-        action: 'Created',
-        user: currentUser,
-        office: currentUser.office
-      }],
-      priority: aiSuggestion?.priority || 'Medium',
-    };
-    onAddDocument(newDoc);
+
+    if (isEditMode && onUpdateDocument) {
+        const updatedDoc: Document = {
+            ...documentToEdit,
+            title,
+            recipientOffice,
+            description,
+            deliveryType,
+            category: aiSuggestion?.category || documentToEdit.category,
+            priority: aiSuggestion?.priority || documentToEdit.priority,
+            updatedAt: now,
+        };
+        onUpdateDocument(updatedDoc);
+    } else if (!isEditMode && onAddDocument) {
+        const newDoc: Document = {
+          id: `doc-${Date.now()}`,
+          trackingNumber: `TDC-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 900) + 100).padStart(3, '0')}`,
+          title,
+          category: aiSuggestion?.category || 'General',
+          deliveryType,
+          recipientOffice,
+          sender: currentUser,
+          description,
+          status: DocumentStatus.DRAFT,
+          createdAt: now,
+          updatedAt: now,
+          history: [{
+            id: `h-${Date.now()}`,
+            timestamp: now,
+            action: 'Created',
+            user: currentUser,
+            office: currentUser.office
+          }],
+          priority: aiSuggestion?.priority || 'Medium',
+        };
+        onAddDocument(newDoc);
+    }
   };
 
   const formInputStyle = "mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
@@ -61,6 +81,7 @@ export const CreateDocumentForm: React.FC<CreateDocumentFormProps> = ({ currentU
   return (
     <div className="p-4 sm:p-8">
       <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl mx-auto bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{isEditMode ? 'Edit Document' : 'Create New Document'}</h2>
         <div>
           <label htmlFor="title" className={formLabelStyle}>Document Title</label>
           <input type="text" id="title" value={title} onChange={e => setTitle(e.target.value)} className={formInputStyle} required />
@@ -116,7 +137,9 @@ export const CreateDocumentForm: React.FC<CreateDocumentFormProps> = ({ currentU
 
         <div className="flex justify-end gap-4 pt-4">
           <button type="button" onClick={onCancel} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 border border-transparent rounded-md hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600">Cancel</button>
-          <button type="submit" className="px-6 py-2 text-sm font-medium text-white bg-sky-600 border border-transparent rounded-md shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">Save Draft</button>
+          <button type="submit" className="px-6 py-2 text-sm font-medium text-white bg-sky-600 border border-transparent rounded-md shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+            {isEditMode ? 'Save Changes' : 'Save Draft'}
+          </button>
         </div>
       </form>
     </div>

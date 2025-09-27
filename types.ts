@@ -50,4 +50,4 @@ export interface Document {
   history: DocumentHistory[];
 }
 
-export type Page = 'dashboard' | 'documents' | 'create' | 'detail' | 'superadmin';
+export type Page = 'dashboard' | 'documents' | 'create' | 'detail' | 'superadmin' | 'edit';

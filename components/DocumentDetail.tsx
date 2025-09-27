@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { Document, DocumentHistory, DocumentStatus, User, UserRole } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { ADMIN_OFFICE_NAME } from '../constants';
+import { PencilIcon } from './icons/PencilIcon';
 
 interface DocumentDetailProps {
   document: Document;
-  currentUser: User;
-  onUpdateDocument: (doc: Document) => void;
+  currentUser?: User | null;
+  onUpdateDocument?: (doc: Document) => void;
   onBack: () => void;
   allOffices: string[];
-  onPrintRequest: (doc: Document) => void;
+  onPrintRequest?: (doc: Document) => void;
+  onEditRequest?: (doc: Document) => void;
 }
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
@@ -19,25 +21,35 @@ const DetailItem: React.FC<{ label: string; value: React.ReactNode }> = ({ label
   </div>
 );
 
-export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, currentUser, onUpdateDocument, onBack, allOffices, onPrintRequest }) => {
+export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, currentUser, onUpdateDocument, onBack, allOffices, onPrintRequest, onEditRequest }) => {
     const [remarks, setRemarks] = useState('');
     const [forwardOffice, setForwardOffice] = useState(document.recipientOffice);
     const [showForwardModal, setShowForwardModal] = useState(false);
 
     const { status } = document;
-    const { role, office, id: currentUserId } = currentUser;
+    
+    // currentUser can be null in guest view
+    const role = currentUser?.role;
+    const office = currentUser?.office;
+    const currentUserId = currentUser?.id;
+
     const lastAction = document.history && document.history.length > 0 ? document.history[0] : null;
 
-    const createHistoryEntry = (action: string, details?: string): DocumentHistory => ({
-        id: `h-${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        action,
-        user: currentUser,
-        office: currentUser.office,
-        remarks: details,
-    });
+    const createHistoryEntry = (action: string, details?: string): DocumentHistory => {
+        if (!currentUser) throw new Error("Cannot create history entry without a current user.");
+        return {
+            id: `h-${Date.now()}`,
+            // FIX: Removed redundant 'new' keyword.
+            timestamp: new Date().toISOString(),
+            action,
+            user: currentUser,
+            office: currentUser.office,
+            remarks: details,
+        }
+    };
 
     const handleAction = (newStatus: DocumentStatus, actionName: string, actionDetails?: string) => {
+        if (!onUpdateDocument) return;
         const historyEntry = createHistoryEntry(actionName, actionDetails || remarks);
         const updatedDoc: Document = {
             ...document,
@@ -50,7 +62,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
     };
 
     const handleForward = () => {
-        if (!forwardOffice) return;
+        if (!forwardOffice || !onUpdateDocument) return;
         const details = `Forwarded to ${forwardOffice}`;
         const historyEntry = createHistoryEntry("Forwarded", remarks);
         const updatedDoc: Document = {
@@ -70,7 +82,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
     };
     
     const handleReturnToSender = () => {
-        if (!document.sender) return; // Should be disabled in UI, but good practice
+        if (!document.sender || !onUpdateDocument) return; // Should be disabled in UI, but good practice
 
         const details = `Returned to Sender (${document.sender.office})`;
         const historyEntry = createHistoryEntry("Returned to Sender", "Returned for review/correction.");
@@ -90,11 +102,18 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(document.trackingNumber)}`;
 
     const renderActions = () => {
+        if (!currentUser) {
+            return <p className="text-sm text-slate-500 dark:text-slate-400">Log in to take actions on this document.</p>;
+        }
+
         // Any user can send a document they created, if it's a draft
         if (status === DocumentStatus.DRAFT && document.sender?.id === currentUserId) {
             return (
                 <>
-                    <button onClick={() => onPrintRequest(document)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-200 rounded-md hover:bg-slate-300 dark:text-slate-200 dark:bg-slate-600 dark:hover:bg-slate-500">Print QR Code</button>
+                    <button onClick={() => onEditRequest && onEditRequest(document)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-200 rounded-md hover:bg-slate-300 dark:text-slate-200 dark:bg-slate-600 dark:hover:bg-slate-500 flex items-center gap-2">
+                        <PencilIcon className="w-4 h-4" /> Edit
+                    </button>
+                    <button onClick={() => onPrintRequest && onPrintRequest(document)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-200 rounded-md hover:bg-slate-300 dark:text-slate-200 dark:bg-slate-600 dark:hover:bg-slate-500">Print QR Code</button>
                     <button onClick={() => handleAction(DocumentStatus.SENT, "Sent", `Sent to ${document.recipientOffice}`)} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-md hover:bg-sky-700">Send Document</button>
                 </>
             )
@@ -161,7 +180,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
     return (
         <div className="p-4 sm:p-8 max-w-7xl mx-auto">
             <button onClick={onBack} className="mb-6 text-sm font-medium text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300">
-                &larr; Back to documents
+                &larr; {currentUser ? 'Back to documents' : 'Back to Home'}
             </button>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Content */}
@@ -190,12 +209,14 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
                     </div>
 
                     {/* Action Form */}
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-                        <h2 className="text-lg font-semibold dark:text-slate-200">Available Actions</h2>
-                        <div className="mt-4 flex flex-wrap gap-4 items-center">
-                            {renderActions()}
-                        </div>
-                    </div>
+                    {currentUser && (
+                      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+                          <h2 className="text-lg font-semibold dark:text-slate-200">Available Actions</h2>
+                          <div className="mt-4 flex flex-wrap gap-4 items-center">
+                              {renderActions()}
+                          </div>
+                      </div>
+                    )}
                 </div>
 
                 {/* Sidebar */}
@@ -226,7 +247,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
             </div>
 
             {/* Forward Modal */}
-            {showForwardModal && (
+            {showForwardModal && currentUser && (
                 <div className="fixed inset-0 bg-black/60 dark:bg-black/70 z-50 flex items-center justify-center p-4">
                     <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
                         <h3 className="text-lg font-bold mb-4 text-slate-900 dark:text-slate-100">Forward Document</h3>

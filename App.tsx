@@ -7,6 +7,7 @@ import { CreateDocumentForm } from './components/CreateDocumentForm';
 import { DocumentDetail } from './components/DocumentDetail';
 import { LoginPage } from './components/LoginPage';
 import { SuperAdminPage } from './components/SuperAdminPage';
+import { QrScanner } from './components/QrScanner';
 import { OFFICES } from './constants';
 import { Document, Page, User, UserRole } from './types';
 import { getDocuments, getUsers, addDocument, updateDocument, addUser, deleteUser, seedDatabase } from './services/supabaseService';
@@ -24,6 +25,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   
   const [users, setUsers] = useState<User[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -106,19 +108,31 @@ function App() {
     const newDoc = await addDocument(doc);
     if (newDoc) {
         setDocuments(prevDocs => [newDoc, ...prevDocs]);
-        handleDocumentSelect(newDoc); // Go to detail view after creating
+        handleDocumentSelect(newDoc);
+    } else {
+        setModalState({ isOpen: true, title: 'Save Failed', message: 'The document could not be saved to the database.', isError: true });
     }
   };
 
   const handleUpdateDocument = async (updatedDoc: Document) => {
     const result = await updateDocument(updatedDoc);
     if (result) {
-        setDocuments(prevDocs => prevDocs.map(doc => (doc.id === updatedDoc.id ? updatedDoc : doc)));
-        // If the detail view is open for this doc, update it.
+        const newDocuments = documents.map(doc => (doc.id === updatedDoc.id ? result : doc));
+        setDocuments(newDocuments);
         if (selectedDocument && selectedDocument.id === updatedDoc.id) {
-            setSelectedDocument(updatedDoc);
+            setSelectedDocument(result);
         }
     }
+  };
+  
+  const handleUpdateEditedDocument = async (doc: Document) => {
+    await handleUpdateDocument(doc);
+    handleDocumentSelect(doc);
+  };
+
+  const handleEditRequest = (doc: Document) => {
+    setSelectedDocument(doc);
+    setCurrentPage('edit');
   };
 
   const handleAddUser = async (newUser: Omit<User, 'id'>) => {
@@ -167,6 +181,21 @@ function App() {
     window.print();
   };
 
+  const handleScanSuccess = (trackingNumber: string) => {
+    setIsScannerOpen(false);
+    const doc = documents.find(d => d.trackingNumber === trackingNumber.trim());
+    if (doc) {
+        handleDocumentSelect(doc);
+    } else {
+        setModalState({
+            isOpen: true,
+            title: 'Document Not Found',
+            message: `No document with the tracking number "${trackingNumber}" could be found.`,
+            isError: true,
+        });
+    }
+  };
+
   const filteredDocuments = useMemo(() => {
     if (!currentUser) return [];
     if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.SUPER_ADMIN) {
@@ -199,6 +228,17 @@ function App() {
         return <div className="p-4 sm:p-8"><DocumentList documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} /></div>;
       case 'create':
         return <CreateDocumentForm currentUser={currentUser} onAddDocument={handleAddDocument} onCancel={() => handleNavigate('dashboard')} allOffices={OFFICES.filter(o => o !== currentUser.office)} />;
+      case 'edit':
+        if (selectedDocument) {
+          return <CreateDocumentForm 
+                    currentUser={currentUser} 
+                    onUpdateDocument={handleUpdateEditedDocument} 
+                    onCancel={() => handleDocumentSelect(selectedDocument)} 
+                    allOffices={OFFICES.filter(o => o !== currentUser.office)}
+                    documentToEdit={selectedDocument} 
+                 />;
+        }
+        return null;
       case 'detail':
         if (selectedDocument) {
           return <DocumentDetail 
@@ -208,6 +248,7 @@ function App() {
                     onBack={() => handleNavigate('documents')} 
                     allOffices={OFFICES}
                     onPrintRequest={handlePrintRequest}
+                    onEditRequest={handleEditRequest}
                  />;
         }
         return null; 
@@ -235,7 +276,21 @@ function App() {
   }
 
   if (!currentUser) {
-    return <LoginPage onLogin={handleLogin} users={users} />;
+    return (
+      <>
+        <LoginPage 
+            onLogin={handleLogin} 
+            users={users} 
+        />
+        <ConfirmationModal
+            isOpen={modalState.isOpen}
+            title={modalState.title}
+            message={modalState.message}
+            onCancel={() => setModalState({ isOpen: false, title: '', message: '' })}
+            isError={modalState.isError}
+        />
+      </>
+    );
   }
 
   return (
@@ -253,6 +308,7 @@ function App() {
         theme={theme}
         onThemeToggle={handleThemeToggle}
         onMenuClick={() => setIsSidebarOpen(true)}
+        onScanClick={() => setIsScannerOpen(true)}
       />
       <main className="lg:ml-64 pt-16">
         {renderContent()}
@@ -265,6 +321,14 @@ function App() {
               className="fixed inset-0 bg-black/50 z-40 lg:hidden"
               aria-hidden="true"
           ></div>
+      )}
+
+      {/* QR Scanner Modal */}
+      {isScannerOpen && (
+          <QrScanner 
+              onScanSuccess={handleScanSuccess} 
+              onClose={() => setIsScannerOpen(false)} 
+          />
       )}
 
       {/* Universal Confirmation and Alert Modal */}

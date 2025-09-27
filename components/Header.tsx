@@ -5,6 +5,7 @@ import { SunIcon } from './icons/SunIcon';
 import { MoonIcon } from './icons/MoonIcon';
 import { LogoutIcon } from './icons/LogoutIcon';
 import { MenuIcon } from './icons/MenuIcon';
+import { QrCodeIcon } from './icons/QrCodeIcon';
 
 interface HeaderProps {
   currentUser: User;
@@ -12,9 +13,10 @@ interface HeaderProps {
   theme: 'light' | 'dark';
   onThemeToggle: () => void;
   onMenuClick: () => void;
+  onScanClick: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, theme, onThemeToggle, onMenuClick }) => {
+export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, theme, onThemeToggle, onMenuClick, onScanClick }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -44,6 +46,13 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, theme, on
         <div className="flex-grow"></div>
 
         <div className="flex items-center gap-4 sm:gap-6">
+            <button 
+                onClick={onScanClick}
+                className="w-10 h-10 flex items-center justify-center rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                aria-label="Scan QR Code"
+            >
+                <QrCodeIcon className="w-5 h-5" />
+            </button>
             <button 
                 onClick={onThemeToggle}
                 className="w-10 h-10 flex items-center justify-center rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"

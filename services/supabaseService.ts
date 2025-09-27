@@ -99,11 +99,20 @@ export const updateDocument = async (doc: Document): Promise<Document | null> =>
     const { sender, ...rest } = doc;
     const dbDocPayload = { ...rest, sender_id: sender?.id ?? null };
 
-    const { error } = await supabase.from('documents').update(dbDocPayload).eq('id', doc.id);
+    // Use .select() to get the updated row back, ensuring the local state is perfectly in sync with the database.
+    const { data, error } = await supabase
+        .from('documents')
+        .update(dbDocPayload)
+        .eq('id', doc.id)
+        .select('*, sender:users(id, name, office, role)')
+        .single();
+
     if (error) {
-        console.error('Error updating document:', error);
+        // Log the full error object as a string to prevent "[object Object]" and reveal the actual error message.
+        console.error('Error updating document. Details:', JSON.stringify(error, null, 2));
         return null;
     }
-    // Return the original doc to update local state
-    return doc;
+    
+    // Return the fresh data from the database.
+    return data as Document | null;
 };
