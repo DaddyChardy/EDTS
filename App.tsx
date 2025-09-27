@@ -10,6 +10,7 @@ import { SuperAdminPage } from './components/SuperAdminPage';
 import { OFFICES } from './constants';
 import { Document, Page, User, UserRole } from './types';
 import { getDocuments, getUsers, addDocument, updateDocument, addUser, deleteUser, seedDatabase } from './services/supabaseService';
+import { ConfirmationModal } from './components/ConfirmationModal';
 
 
 function App() {
@@ -33,6 +34,14 @@ function App() {
 
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [printPreviewDoc, setPrintPreviewDoc] = useState<Document | null>(null);
+
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+    isError?: boolean;
+  }>({ isOpen: false, title: '', message: '' });
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -122,12 +131,19 @@ function App() {
     }
   };
 
+  const handleDeleteUserRequest = (user: User) => {
+    setModalState({
+        isOpen: true,
+        title: 'Delete User Confirmation',
+        message: `Are you sure you want to delete the user "${user.name}"? This action is permanent and cannot be undone.`,
+        onConfirm: () => handleDeleteUser(user.id),
+    });
+  };
+
   const handleDeleteUser = async (userId: string) => {
-      const success = await deleteUser(userId);
-      if (success) {
-        // Remove the user from the users list
+    try {
+        await deleteUser(userId);
         setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
-        // Update documents to reflect the deleted sender
         setDocuments(prevDocs => 
             prevDocs.map(doc => {
                 if (doc.sender?.id === userId) {
@@ -136,7 +152,14 @@ function App() {
                 return doc;
             })
         );
-      }
+    } catch (error) {
+        setModalState({
+            isOpen: true,
+            title: 'Deletion Failed',
+            message: error instanceof Error ? error.message : 'An unknown error occurred.',
+            isError: true,
+        });
+    }
   };
   
   const handlePrintRequest = (doc: Document) => {
@@ -199,7 +222,7 @@ function App() {
             allUsers={users}
             allDocuments={documents}
             onAddUser={handleAddUser}
-            onDeleteUser={handleDeleteUser}
+            onDeleteUserRequest={handleDeleteUserRequest}
         />;
       default:
         return <Dashboard documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />;
@@ -247,6 +270,16 @@ function App() {
           ></div>
       )}
 
+      {/* Universal Confirmation and Alert Modal */}
+      <ConfirmationModal
+        isOpen={modalState.isOpen}
+        title={modalState.title}
+        message={modalState.message}
+        onConfirm={modalState.onConfirm}
+        onCancel={() => setModalState({ isOpen: false, title: '', message: '' })}
+        confirmText="Delete"
+        isError={modalState.isError}
+      />
 
       {/* Print Preview Modal */}
       {printPreviewDoc && (

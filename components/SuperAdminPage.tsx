@@ -7,10 +7,10 @@ interface SuperAdminPageProps {
   allUsers: User[];
   allDocuments: Document[];
   onAddUser: (user: Omit<User, 'id'>) => void;
-  onDeleteUser: (userId: string) => void;
+  onDeleteUserRequest: (user: User) => void;
 }
 
-const UserManagement: React.FC<SuperAdminPageProps> = ({ allUsers, onAddUser, onDeleteUser }) => {
+const UserManagement: React.FC<Omit<SuperAdminPageProps, 'allDocuments'>> = ({ allUsers, onAddUser, onDeleteUserRequest }) => {
     const [name, setName] = useState('');
     const [office, setOffice] = useState('');
     const [role, setRole] = useState<UserRole>(UserRole.STAFF);
@@ -25,9 +25,7 @@ const UserManagement: React.FC<SuperAdminPageProps> = ({ allUsers, onAddUser, on
     };
     
     const handleDeleteUserClick = (user: User) => {
-        if (window.confirm(`Are you sure you want to delete ${user.name}? This action cannot be undone.`)) {
-            onDeleteUser(user.id);
-        }
+        onDeleteUserRequest(user);
     };
 
     const formInputStyle = "mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
@@ -183,7 +181,7 @@ export const SuperAdminPage: React.FC<SuperAdminPageProps> = (props) => {
         <TabButton tab="logs" label="Transaction Logs" />
       </div>
       <div>
-        {activeTab === 'users' && <UserManagement {...props} />}
+        {activeTab === 'users' && <UserManagement allUsers={props.allUsers} onAddUser={props.onAddUser} onDeleteUserRequest={props.onDeleteUserRequest} />}
         {activeTab === 'reports' && <Reports allDocuments={props.allDocuments} />}
         {activeTab === 'logs' && <TransactionLogs allDocuments={props.allDocuments} />}
       </div>

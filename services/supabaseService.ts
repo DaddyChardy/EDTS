@@ -63,26 +63,23 @@ export const addUser = async (user: Omit<User, 'id'>): Promise<User | null> => {
     return data;
 };
 
-export const deleteUser = async (userId: string): Promise<boolean> => {
+export const deleteUser = async (userId: string): Promise<void> => {
     // By adding .select(), the response will contain the deleted data.
     // This allows us to confirm that a row was actually deleted.
     const { data, error } = await supabase.from('users').delete().eq('id', userId).select();
 
     if (error) {
         console.error('Error deleting user:', error);
-        alert(`Failed to delete user. Database error: ${error.message}`);
-        return false;
+        throw new Error(`Failed to delete user. Database error: ${error.message}`);
     }
 
     // Check if any rows were actually deleted. If not, it's a silent failure.
     if (!data || data.length === 0) {
         console.warn('Delete operation completed with no error, but no user was deleted. This is likely a Row Level Security (RLS) issue.');
-        alert('Could not delete user. Please check your database permissions. If Row Level Security is enabled on the `users` table, you need a policy that allows public delete operations.');
-        return false;
+        throw new Error('Could not delete user. Please check your database permissions. If Row Level Security is enabled on the `users` table, you need a policy that allows public delete operations.');
     }
 
     console.log('Successfully deleted user:', data);
-    return true;
 };
 
 export const addDocument = async (doc: Document): Promise<Document | null> => {
