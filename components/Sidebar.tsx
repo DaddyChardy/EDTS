@@ -1,15 +1,17 @@
 import React from 'react';
-import { Page } from '../types';
+import { Page, User, UserRole } from '../types';
 import { DashboardIcon } from './icons/DashboardIcon';
 import { DocumentIcon } from './icons/DocumentIcon';
 import { PlusIcon } from './icons/PlusIcon';
 import { CloseIcon } from './icons/CloseIcon';
+import { ShieldIcon } from './icons/ShieldIcon';
 
 interface SidebarProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
   isOpen: boolean;
   onClose: () => void;
+  currentUser: User;
 }
 
 const NavItem: React.FC<{
@@ -33,7 +35,7 @@ const NavItem: React.FC<{
   </li>
 );
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpen, onClose }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpen, onClose, currentUser }) => {
   return (
     <aside 
       className={`fixed top-0 left-0 z-50 w-64 h-screen transition-transform lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`} 
@@ -66,6 +68,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpe
             isActive={currentPage === 'documents'}
             onClick={() => onNavigate('documents')}
           />
+          {currentUser.role === UserRole.SUPER_ADMIN && (
+             <NavItem
+                icon={<ShieldIcon className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white" />}
+                label="Super Admin"
+                isActive={currentPage === 'superadmin'}
+                onClick={() => onNavigate('superadmin')}
+              />
+          )}
         </ul>
         <div className="mt-8">
             <button 

@@ -15,6 +15,7 @@ export enum UserRole {
   STAFF = 'Staff',
   APPROVER = 'Approver',
   ADMIN = 'Admin',
+  SUPER_ADMIN = 'Super Admin',
 }
 
 export interface User {
@@ -49,4 +50,4 @@ export interface Document {
   history: DocumentHistory[];
 }
 
-export type Page = 'dashboard' | 'documents' | 'create' | 'detail';
+export type Page = 'dashboard' | 'documents' | 'create' | 'detail' | 'superadmin';

@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
-import { USERS } from '../constants';
+import { User } from '../types';
 
 interface LoginPageProps {
   onLogin: (userId: string) => void;
+  users: User[];
 }
 
-export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, users }) => {
   const [selectedUserId, setSelectedUserId] = useState('');
 
   const handleLogin = (e: React.FormEvent) => {
@@ -42,7 +43,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-sky-500 focus:border-sky-500 sm:text-sm rounded-md"
             >
               <option value="" disabled>-- Choose a user --</option>
-              {USERS.map((user) => (
+              {users.map((user) => (
                 <option key={user.id} value={user.id}>
                   {user.name} ({user.office})
                 </option>

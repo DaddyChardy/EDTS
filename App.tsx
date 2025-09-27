@@ -6,6 +6,7 @@ import { DocumentList } from './components/DocumentList';
 import { CreateDocumentForm } from './components/CreateDocumentForm';
 import { DocumentDetail } from './components/DocumentDetail';
 import { LoginPage } from './components/LoginPage';
+import { SuperAdminPage } from './components/SuperAdminPage';
 import { USERS, OFFICES, INITIAL_DOCUMENTS } from './constants';
 import { Document, Page, User, UserRole } from './types';
 
@@ -19,6 +20,11 @@ function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
+  const [users, setUsers] = useState<User[]>(() => {
+    const savedUsers = localStorage.getItem('users');
+    return savedUsers ? JSON.parse(savedUsers) : USERS;
+  });
+
   // Persist documents in localStorage
   const [documents, setDocuments] = useState<Document[]>(() => {
     const savedDocs = localStorage.getItem('documents');
@@ -44,6 +50,10 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
+    localStorage.setItem('users', JSON.stringify(users));
+  }, [users]);
+
+  useEffect(() => {
       localStorage.setItem('documents', JSON.stringify(documents));
   }, [documents]);
 
@@ -60,7 +70,7 @@ function App() {
   };
   
   const handleLogin = (userId: string) => {
-    const user = USERS.find(u => u.id === userId);
+    const user = users.find(u => u.id === userId);
     if (user) {
       setCurrentUser(user);
       setCurrentPage('dashboard');
@@ -96,6 +106,18 @@ function App() {
         setSelectedDocument(updatedDoc);
     }
   };
+
+  const handleAddUser = (newUser: Omit<User, 'id'>) => {
+    const user: User = {
+        ...newUser,
+        id: `user-${Date.now()}`
+    };
+    setUsers(prevUsers => [...prevUsers, user]);
+  };
+
+  const handleDeleteUser = (userId: string) => {
+      setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+  };
   
   const handlePrintRequest = (doc: Document) => {
     setPrintPreviewDoc(doc);
@@ -107,8 +129,8 @@ function App() {
 
   const filteredDocuments = useMemo(() => {
     if (!currentUser) return [];
-    if (currentUser.role === UserRole.ADMIN) {
-      return documents; // Admin sees everything
+    if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.SUPER_ADMIN) {
+      return documents; // Admin and Super Admin see everything
     }
     
     return documents.filter(doc => {
@@ -149,13 +171,23 @@ function App() {
                  />;
         }
         return null; 
+      case 'superadmin':
+        if (currentUser.role !== UserRole.SUPER_ADMIN) {
+            return <Dashboard documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />;
+        }
+        return <SuperAdminPage
+            allUsers={users}
+            allDocuments={documents}
+            onAddUser={handleAddUser}
+            onDeleteUser={handleDeleteUser}
+        />;
       default:
         return <Dashboard documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />;
     }
   };
 
   if (!currentUser) {
-    return <LoginPage onLogin={handleLogin} />;
+    return <LoginPage onLogin={handleLogin} users={users} />;
   }
 
   return (
@@ -165,6 +197,7 @@ function App() {
         onNavigate={handleNavigate} 
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        currentUser={currentUser}
       />
       <Header 
         currentUser={currentUser} 
