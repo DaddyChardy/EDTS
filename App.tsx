@@ -15,9 +15,10 @@ import { ConfirmationModal } from './components/ConfirmationModal';
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    if (localStorage.getItem('theme') === 'dark') return 'dark';
-    if (localStorage.getItem('theme') === 'light') return 'light';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      return 'dark';
+    }
+    return 'light';
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -44,11 +45,7 @@ function App() {
   }>({ isOpen: false, title: '', message: '' });
 
   useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('theme', theme);
   }, [theme]);
 
