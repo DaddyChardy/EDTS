@@ -7,8 +7,10 @@ import { CreateDocumentForm } from './components/CreateDocumentForm';
 import { DocumentDetail } from './components/DocumentDetail';
 import { LoginPage } from './components/LoginPage';
 import { SuperAdminPage } from './components/SuperAdminPage';
-import { USERS, OFFICES, INITIAL_DOCUMENTS } from './constants';
+import { OFFICES } from './constants';
 import { Document, Page, User, UserRole } from './types';
+import { getDocuments, getUsers, addDocument, updateDocument, addUser, deleteUser, seedDatabase } from './services/supabaseService';
+
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -17,21 +19,13 @@ function App() {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
+  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  const [users, setUsers] = useState<User[]>(() => {
-    const savedUsers = localStorage.getItem('users');
-    return savedUsers ? JSON.parse(savedUsers) : USERS;
-  });
-
-  // Persist documents in localStorage
-  const [documents, setDocuments] = useState<Document[]>(() => {
-    const savedDocs = localStorage.getItem('documents');
-    return savedDocs ? JSON.parse(savedDocs) : INITIAL_DOCUMENTS;
-  });
+  const [users, setUsers] = useState<User[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
   
-  // Manage login state
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
       const savedUser = localStorage.getItem('currentUser');
       return savedUser ? JSON.parse(savedUser) : null;
@@ -50,12 +44,20 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    localStorage.setItem('users', JSON.stringify(users));
-  }, [users]);
-
-  useEffect(() => {
-      localStorage.setItem('documents', JSON.stringify(documents));
-  }, [documents]);
+    const fetchData = async () => {
+        setIsLoading(true);
+        // Ensure the database is seeded with initial users if it's empty
+        await seedDatabase(); 
+        const [fetchedUsers, fetchedDocuments] = await Promise.all([
+            getUsers(),
+            getDocuments()
+        ]);
+        setUsers(fetchedUsers);
+        setDocuments(fetchedDocuments.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
+        setIsLoading(false);
+    };
+    fetchData();
+  }, []);
 
   useEffect(() => {
     if (currentUser) {
@@ -94,29 +96,47 @@ function App() {
     setCurrentPage('detail');
   };
 
-  const handleAddDocument = (doc: Document) => {
-    setDocuments(prevDocs => [doc, ...prevDocs]);
-    handleDocumentSelect(doc); // Go to detail view after creating
-  };
-
-  const handleUpdateDocument = (updatedDoc: Document) => {
-    setDocuments(prevDocs => prevDocs.map(doc => (doc.id === updatedDoc.id ? updatedDoc : doc)));
-    // If the detail view is open for this doc, update it.
-    if (selectedDocument && selectedDocument.id === updatedDoc.id) {
-        setSelectedDocument(updatedDoc);
+  const handleAddDocument = async (doc: Document) => {
+    const newDoc = await addDocument(doc);
+    if (newDoc) {
+        setDocuments(prevDocs => [newDoc, ...prevDocs]);
+        handleDocumentSelect(newDoc); // Go to detail view after creating
     }
   };
 
-  const handleAddUser = (newUser: Omit<User, 'id'>) => {
-    const user: User = {
-        ...newUser,
-        id: `user-${Date.now()}`
-    };
-    setUsers(prevUsers => [...prevUsers, user]);
+  const handleUpdateDocument = async (updatedDoc: Document) => {
+    const result = await updateDocument(updatedDoc);
+    if (result) {
+        setDocuments(prevDocs => prevDocs.map(doc => (doc.id === updatedDoc.id ? updatedDoc : doc)));
+        // If the detail view is open for this doc, update it.
+        if (selectedDocument && selectedDocument.id === updatedDoc.id) {
+            setSelectedDocument(updatedDoc);
+        }
+    }
   };
 
-  const handleDeleteUser = (userId: string) => {
-      setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+  const handleAddUser = async (newUser: Omit<User, 'id'>) => {
+    const addedUser = await addUser(newUser);
+    if (addedUser) {
+        setUsers(prevUsers => [...prevUsers, addedUser]);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+      const success = await deleteUser(userId);
+      if (success) {
+        // Remove the user from the users list
+        setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+        // Update documents to reflect the deleted sender
+        setDocuments(prevDocs => 
+            prevDocs.map(doc => {
+                if (doc.sender?.id === userId) {
+                    return { ...doc, sender: null };
+                }
+                return doc;
+            })
+        );
+      }
   };
   
   const handlePrintRequest = (doc: Document) => {
@@ -135,7 +155,7 @@ function App() {
     
     return documents.filter(doc => {
       // Users always see documents they created
-      if (doc.sender.id === currentUser.id) {
+      if (doc.sender?.id === currentUser.id) {
         return true;
       }
       
@@ -185,6 +205,14 @@ function App() {
         return <Dashboard documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />;
     }
   };
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="text-xl font-semibold text-slate-700 dark:text-slate-300">Loading Application...</div>
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return <LoginPage onLogin={handleLogin} users={users} />;

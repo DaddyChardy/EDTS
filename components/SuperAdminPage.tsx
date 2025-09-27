@@ -23,6 +23,12 @@ const UserManagement: React.FC<SuperAdminPageProps> = ({ allUsers, onAddUser, on
         setOffice('');
         setRole(UserRole.STAFF);
     };
+    
+    const handleDeleteUserClick = (user: User) => {
+        if (window.confirm(`Are you sure you want to delete ${user.name}? This action cannot be undone.`)) {
+            onDeleteUser(user.id);
+        }
+    };
 
     const formInputStyle = "mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
     const formLabelStyle = "block text-sm font-medium text-slate-700 dark:text-slate-300";
@@ -62,7 +68,7 @@ const UserManagement: React.FC<SuperAdminPageProps> = ({ allUsers, onAddUser, on
                                 <p className="text-sm text-slate-500 dark:text-slate-400">{user.office} - {user.role}</p>
                             </div>
                             {user.role !== UserRole.SUPER_ADMIN && (
-                                <button onClick={() => window.confirm(`Are you sure you want to delete ${user.name}?`) && onDeleteUser(user.id)} className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900">Delete</button>
+                                <button onClick={() => handleDeleteUserClick(user)} className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900">Delete</button>
                             )}
                         </li>
                     ))}

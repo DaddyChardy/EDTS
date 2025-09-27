@@ -34,7 +34,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({ documents, onDocumen
                     <StatusBadge status={doc.status} />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{new Date(doc.updatedAt).toLocaleString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{doc.sender.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{doc.sender?.name || 'Unknown User'}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button onClick={() => onDocumentSelect(doc)} className="text-sky-600 hover:text-sky-900 dark:text-sky-400 dark:hover:text-sky-300">
                       View

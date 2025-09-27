@@ -43,7 +43,7 @@ export interface Document {
   priority: 'Low' | 'Medium' | 'High';
   deliveryType: 'Internal' | 'External';
   status: DocumentStatus;
-  sender: User;
+  sender: User | null;
   recipientOffice: string;
   createdAt: string;
   updatedAt: string;
