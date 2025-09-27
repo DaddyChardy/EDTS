@@ -5,8 +5,13 @@ import { Dashboard } from './components/Dashboard';
 import { DocumentList } from './components/DocumentList';
 import { CreateDocumentForm } from './components/CreateDocumentForm';
 import { DocumentDetail } from './components/DocumentDetail';
-import { USERS, OFFICES, INITIAL_DOCUMENTS } from './constants';
+import { LoginPage } from './components/LoginPage';
+import { SuperAdminPage } from './components/SuperAdminPage';
+import { OFFICES } from './constants';
 import { Document, Page, User, UserRole } from './types';
+import { getDocuments, getUsers, addDocument, updateDocument, addUser, deleteUser, seedDatabase } from './services/supabaseService';
+import { ConfirmationModal } from './components/ConfirmationModal';
+
 
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -15,20 +20,28 @@ function App() {
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
+  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
-  // Persist documents and user in localStorage to simulate a session
-  const [documents, setDocuments] = useState<Document[]>(() => {
-    const savedDocs = localStorage.getItem('documents');
-    return savedDocs ? JSON.parse(savedDocs) : INITIAL_DOCUMENTS;
-  });
-  const [currentUser, setCurrentUser] = useState<User>(() => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
       const savedUser = localStorage.getItem('currentUser');
-      return savedUser ? JSON.parse(savedUser) : USERS.find(u => u.id === 'user-richard') || USERS[0];
+      return savedUser ? JSON.parse(savedUser) : null;
   });
 
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [printPreviewDoc, setPrintPreviewDoc] = useState<Document | null>(null);
+
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+    isError?: boolean;
+  }>({ isOpen: false, title: '', message: '' });
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -40,26 +53,48 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-      localStorage.setItem('documents', JSON.stringify(documents));
-  }, [documents]);
+    const fetchData = async () => {
+        setIsLoading(true);
+        // Ensure the database is seeded with initial users if it's empty
+        await seedDatabase(); 
+        const [fetchedUsers, fetchedDocuments] = await Promise.all([
+            getUsers(),
+            getDocuments()
+        ]);
+        setUsers(fetchedUsers);
+        setDocuments(fetchedDocuments.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
+        setIsLoading(false);
+    };
+    fetchData();
+  }, []);
 
   useEffect(() => {
+    if (currentUser) {
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem('currentUser');
+    }
   }, [currentUser]);
 
   const handleThemeToggle = () => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
   };
-
-  const handleUserChange = (userId: string) => {
-    const user = USERS.find(u => u.id === userId);
+  
+  const handleLogin = (userId: string) => {
+    const user = users.find(u => u.id === userId);
     if (user) {
       setCurrentUser(user);
+      setCurrentPage('dashboard');
     }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
   };
 
   const handleNavigate = (page: Page) => {
     setCurrentPage(page);
+    setIsSidebarOpen(false); // Close sidebar on navigation
     if (page !== 'detail') {
       setSelectedDocument(null);
     }
@@ -70,16 +105,60 @@ function App() {
     setCurrentPage('detail');
   };
 
-  const handleAddDocument = (doc: Document) => {
-    setDocuments(prevDocs => [doc, ...prevDocs]);
-    handleDocumentSelect(doc); // Go to detail view after creating
+  const handleAddDocument = async (doc: Document) => {
+    const newDoc = await addDocument(doc);
+    if (newDoc) {
+        setDocuments(prevDocs => [newDoc, ...prevDocs]);
+        handleDocumentSelect(newDoc); // Go to detail view after creating
+    }
   };
 
-  const handleUpdateDocument = (updatedDoc: Document) => {
-    setDocuments(prevDocs => prevDocs.map(doc => (doc.id === updatedDoc.id ? updatedDoc : doc)));
-    // If the detail view is open for this doc, update it.
-    if (selectedDocument && selectedDocument.id === updatedDoc.id) {
-        setSelectedDocument(updatedDoc);
+  const handleUpdateDocument = async (updatedDoc: Document) => {
+    const result = await updateDocument(updatedDoc);
+    if (result) {
+        setDocuments(prevDocs => prevDocs.map(doc => (doc.id === updatedDoc.id ? updatedDoc : doc)));
+        // If the detail view is open for this doc, update it.
+        if (selectedDocument && selectedDocument.id === updatedDoc.id) {
+            setSelectedDocument(updatedDoc);
+        }
+    }
+  };
+
+  const handleAddUser = async (newUser: Omit<User, 'id'>) => {
+    const addedUser = await addUser(newUser);
+    if (addedUser) {
+        setUsers(prevUsers => [...prevUsers, addedUser]);
+    }
+  };
+
+  const handleDeleteUserRequest = (user: User) => {
+    setModalState({
+        isOpen: true,
+        title: 'Delete User Confirmation',
+        message: `Are you sure you want to delete the user "${user.name}"? This action is permanent and cannot be undone.`,
+        onConfirm: () => handleDeleteUser(user.id),
+    });
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    try {
+        await deleteUser(userId);
+        setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+        setDocuments(prevDocs => 
+            prevDocs.map(doc => {
+                if (doc.sender?.id === userId) {
+                    return { ...doc, sender: null };
+                }
+                return doc;
+            })
+        );
+    } catch (error) {
+        setModalState({
+            isOpen: true,
+            title: 'Deletion Failed',
+            message: error instanceof Error ? error.message : 'An unknown error occurred.',
+            isError: true,
+        });
     }
   };
   
@@ -93,13 +172,13 @@ function App() {
 
   const filteredDocuments = useMemo(() => {
     if (!currentUser) return [];
-    if (currentUser.role === UserRole.ADMIN) {
-      return documents; // Admin sees everything
+    if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.SUPER_ADMIN) {
+      return documents; // Admin and Super Admin see everything
     }
     
     return documents.filter(doc => {
       // Users always see documents they created
-      if (doc.sender.id === currentUser.id) {
+      if (doc.sender?.id === currentUser.id) {
         return true;
       }
       
@@ -115,11 +194,12 @@ function App() {
 
 
   const renderContent = () => {
+    if (!currentUser) return null;
     switch (currentPage) {
       case 'dashboard':
         return <Dashboard documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />;
       case 'documents':
-        return <div className="p-8"><DocumentList documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} /></div>;
+        return <div className="p-4 sm:p-8"><DocumentList documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} /></div>;
       case 'create':
         return <CreateDocumentForm currentUser={currentUser} onAddDocument={handleAddDocument} onCancel={() => handleNavigate('dashboard')} allOffices={OFFICES.filter(o => o !== currentUser.office)} />;
       case 'detail':
@@ -134,24 +214,72 @@ function App() {
                  />;
         }
         return null; 
+      case 'superadmin':
+        if (currentUser.role !== UserRole.SUPER_ADMIN) {
+            return <Dashboard documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />;
+        }
+        return <SuperAdminPage
+            allUsers={users}
+            allDocuments={documents}
+            onAddUser={handleAddUser}
+            onDeleteUserRequest={handleDeleteUserRequest}
+        />;
       default:
         return <Dashboard documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />;
     }
   };
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="text-xl font-semibold text-slate-700 dark:text-slate-300">Loading Application...</div>
+      </div>
+    );
+  }
+
+  if (!currentUser) {
+    return <LoginPage onLogin={handleLogin} users={users} />;
+  }
 
   return (
     <div className="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 min-h-screen">
-      <Sidebar currentPage={currentPage} onNavigate={handleNavigate} />
+      <Sidebar 
+        currentPage={currentPage} 
+        onNavigate={handleNavigate} 
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        currentUser={currentUser}
+      />
       <Header 
         currentUser={currentUser} 
-        allUsers={USERS} 
-        onUserChange={handleUserChange} 
+        onLogout={handleLogout}
         theme={theme}
         onThemeToggle={handleThemeToggle}
+        onMenuClick={() => setIsSidebarOpen(true)}
       />
-      <main className="ml-64 pt-16">
+      <main className="lg:ml-64 pt-16">
         {renderContent()}
       </main>
+
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+          <div 
+              onClick={() => setIsSidebarOpen(false)}
+              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              aria-hidden="true"
+          ></div>
+      )}
+
+      {/* Universal Confirmation and Alert Modal */}
+      <ConfirmationModal
+        isOpen={modalState.isOpen}
+        title={modalState.title}
+        message={modalState.message}
+        onConfirm={modalState.onConfirm}
+        onCancel={() => setModalState({ isOpen: false, title: '', message: '' })}
+        confirmText="Delete"
+        isError={modalState.isError}
+      />
 
       {/* Print Preview Modal */}
       {printPreviewDoc && (

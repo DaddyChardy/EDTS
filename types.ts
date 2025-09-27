@@ -15,6 +15,7 @@ export enum UserRole {
   STAFF = 'Staff',
   APPROVER = 'Approver',
   ADMIN = 'Admin',
+  SUPER_ADMIN = 'Super Admin',
 }
 
 export interface User {
@@ -42,11 +43,11 @@ export interface Document {
   priority: 'Low' | 'Medium' | 'High';
   deliveryType: 'Internal' | 'External';
   status: DocumentStatus;
-  sender: User;
+  sender: User | null;
   recipientOffice: string;
   createdAt: string;
   updatedAt: string;
   history: DocumentHistory[];
 }
 
-export type Page = 'dashboard' | 'documents' | 'create' | 'detail';
+export type Page = 'dashboard' | 'documents' | 'create' | 'detail' | 'superadmin';

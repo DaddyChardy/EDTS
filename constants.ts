@@ -7,6 +7,7 @@ export const USERS: User[] = [
   { id: 'user-richard', name: 'Richard', office: 'Cashier Section', role: UserRole.STAFF },
   { id: 'user-josh', name: 'Josh', office: ADMIN_OFFICE_NAME, role: UserRole.ADMIN },
   { id: 'user-daisy', name: 'Daisy', office: 'SGOD Section', role: UserRole.APPROVER },
+  { id: 'user-sam', name: 'Sam', office: 'IT Department', role: UserRole.SUPER_ADMIN },
 ];
 
 
@@ -16,6 +17,7 @@ export const OFFICES: string[] = [
   'SGOD Section',
   'HR Section',
   'Accounting Section',
+  'IT Department',
 ];
 
 export const INITIAL_DOCUMENTS: Document[] = [];

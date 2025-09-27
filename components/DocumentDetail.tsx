@@ -26,7 +26,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
 
     const { status } = document;
     const { role, office, id: currentUserId } = currentUser;
-    const lastAction = document.history[0];
+    const lastAction = document.history && document.history.length > 0 ? document.history[0] : null;
 
     const createHistoryEntry = (action: string, details?: string): DocumentHistory => ({
         id: `h-${Date.now()}`,
@@ -43,7 +43,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
             ...document,
             status: newStatus,
             updatedAt: historyEntry.timestamp,
-            history: [historyEntry, ...document.history],
+            history: [historyEntry, ...(document.history || [])],
         };
         onUpdateDocument(updatedDoc);
         setRemarks('');
@@ -60,7 +60,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
             updatedAt: historyEntry.timestamp,
             history: [
                 { ...historyEntry, remarks: details }, 
-                ...document.history
+                ...(document.history || [])
             ],
         };
         onUpdateDocument(updatedDoc);
@@ -70,6 +70,8 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
     };
     
     const handleReturnToSender = () => {
+        if (!document.sender) return; // Should be disabled in UI, but good practice
+
         const details = `Returned to Sender (${document.sender.office})`;
         const historyEntry = createHistoryEntry("Returned to Sender", "Returned for review/correction.");
         const updatedDoc: Document = {
@@ -79,7 +81,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
             updatedAt: historyEntry.timestamp,
             history: [
                 { ...historyEntry, remarks: details },
-                ...document.history
+                ...(document.history || [])
             ],
         };
         onUpdateDocument(updatedDoc);
@@ -89,7 +91,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
 
     const renderActions = () => {
         // Any user can send a document they created, if it's a draft
-        if (status === DocumentStatus.DRAFT && document.sender.id === currentUserId) {
+        if (status === DocumentStatus.DRAFT && document.sender?.id === currentUserId) {
             return (
                 <>
                     <button onClick={() => onPrintRequest(document)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-200 rounded-md hover:bg-slate-300 dark:text-slate-200 dark:bg-slate-600 dark:hover:bg-slate-500">Print QR Code</button>
@@ -100,10 +102,11 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
 
         // Both Admin and the Recipient can receive a document
         if (status === DocumentStatus.SENT && (role === UserRole.ADMIN || office === document.recipientOffice)) {
-             return <button onClick={() => handleAction(DocumentStatus.RECEIVED, "Received", `Received from ${lastAction.office}`)} className="px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-md hover:bg-cyan-700">Receive</button>
+             const fromOffice = lastAction?.office || document.sender?.office || 'the previous office';
+             return <button onClick={() => handleAction(DocumentStatus.RECEIVED, "Received", `Received from ${fromOffice}`)} className="px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-md hover:bg-cyan-700">Receive</button>
         }
 
-        if (status === DocumentStatus.RECEIVED && office === lastAction.office) {
+        if (status === DocumentStatus.RECEIVED && lastAction && office === lastAction.office) {
             // If received by Admin (Records), they can route it or action it directly
             if(office === ADMIN_OFFICE_NAME) {
                 return (
@@ -115,21 +118,22 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
                 )
             }
             // If the original sender gets it back, they can re-forward it
-            if(document.sender.id === currentUserId) {
+            if(document.sender?.id === currentUserId) {
                 return <button onClick={() => setShowForwardModal(true)} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">Forward</button>
             }
             // Any other recipient can approve/RTS/cancel
             return (
                 <>
                     <button onClick={() => handleAction(DocumentStatus.APPROVED, "Approved")} className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">Approved</button>
-                    <button onClick={handleReturnToSender} className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-md hover:bg-yellow-700">RTS (Return to Sender)</button>
+                    <button onClick={handleReturnToSender} disabled={!document.sender} className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-md hover:bg-yellow-700 disabled:bg-slate-400 disabled:cursor-not-allowed">RTS (Return to Sender)</button>
                     <button onClick={() => handleAction(DocumentStatus.DISAPPROVED, "Cancel")} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">Cancel</button>
                 </>
             )
         }
 
         if (status === DocumentStatus.FORWARDED && office === document.recipientOffice) {
-            return <button onClick={() => handleAction(DocumentStatus.RECEIVED, "Received", `Received from ${lastAction.office}`)} className="px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-md hover:bg-cyan-700">Receive</button>
+            const fromOffice = lastAction?.office || 'the previous office';
+            return <button onClick={() => handleAction(DocumentStatus.RECEIVED, "Received", `Received from ${fromOffice}`)} className="px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-md hover:bg-cyan-700">Receive</button>
         }
 
         if (status === DocumentStatus.APPROVED && role === UserRole.ADMIN) {
@@ -142,7 +146,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
         }
         
         // Sender confirms completion after release
-        if (status === DocumentStatus.RELEASED && document.sender.id === currentUserId) {
+        if (status === DocumentStatus.RELEASED && document.sender?.id === currentUserId) {
             return (
                 <button onClick={() => handleAction(DocumentStatus.COMPLETED, "Transaction Finished", "Released document received by sender.")} className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700">
                     Finish Transaction
@@ -155,7 +159,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
 
 
     return (
-        <div className="p-8 max-w-7xl mx-auto">
+        <div className="p-4 sm:p-8 max-w-7xl mx-auto">
             <button onClick={onBack} className="mb-6 text-sm font-medium text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300">
                 &larr; Back to documents
             </button>
@@ -163,17 +167,19 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-start flex-wrap gap-4">
                             <div>
-                                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{document.title}</h1>
+                                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">{document.title}</h1>
                                 <p className="text-sm font-mono text-slate-500 dark:text-slate-400 mt-1">{document.trackingNumber}</p>
                             </div>
-                            <StatusBadge status={document.status} />
+                            <div className="flex-shrink-0">
+                                <StatusBadge status={document.status} />
+                            </div>
                         </div>
                         <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                             <DetailItem label="Category" value={document.category} />
                             <DetailItem label="Priority" value={document.priority} />
-                            <DetailItem label="Sender" value={`${document.sender.name} (${document.sender.office})`} />
+                            <DetailItem label="Sender" value={document.sender ? `${document.sender.name} (${document.sender.office})` : 'Unknown User'} />
                             <DetailItem label="Intended Recipient" value={document.recipientOffice} />
                             <DetailItem label="Delivery Type" value={document.deliveryType} />
                             <DetailItem label="Created At" value={new Date(document.createdAt).toLocaleString()} />
@@ -202,7 +208,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
                     <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
                         <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">Document History</h2>
                         <ol className="relative border-s border-slate-200 dark:border-slate-700">
-                             {document.history.map((item, index) => (
+                             {(document.history || []).map((item, index) => (
                                 <li key={item.id} className="mb-6 ms-4">
                                     <div className={`absolute w-3 h-3 rounded-full mt-1.5 -start-1.5 border border-white dark:border-slate-800 ${index === 0 ? 'bg-sky-500' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
                                     <time className="mb-1 text-xs font-normal leading-none text-slate-400 dark:text-slate-500">{new Date(item.timestamp).toLocaleString()}</time>

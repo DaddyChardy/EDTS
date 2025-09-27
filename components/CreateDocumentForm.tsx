@@ -59,8 +59,8 @@ export const CreateDocumentForm: React.FC<CreateDocumentFormProps> = ({ currentU
   const formLabelStyle = "block text-sm font-medium text-slate-700 dark:text-slate-300";
 
   return (
-    <div className="p-8">
-      <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl mx-auto bg-white dark:bg-slate-800 p-8 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+    <div className="p-4 sm:p-8">
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl mx-auto bg-white dark:bg-slate-800 p-6 sm:p-8 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
         <div>
           <label htmlFor="title" className={formLabelStyle}>Document Title</label>
           <input type="text" id="title" value={title} onChange={e => setTitle(e.target.value)} className={formInputStyle} required />
