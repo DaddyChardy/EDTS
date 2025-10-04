@@ -105,5 +105,35 @@
   <body class="bg-slate-50 dark:bg-slate-900 antialiased">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
+    <script>
+      // Disable right-click context menu
+      document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+      });
+
+      // Disable developer tools shortcuts
+      document.onkeydown = function(e) {
+        // F12
+        if (e.keyCode === 123) {
+            return false;
+        }
+        // Ctrl+Shift+I
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 'I'.charCodeAt(0)) {
+            return false;
+        }
+        // Ctrl+Shift+C
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 'C'.charCodeAt(0)) {
+            return false;
+        }
+        // Ctrl+Shift+J
+        if (e.ctrlKey && e.shiftKey && e.keyCode === 'J'.charCodeAt(0)) {
+            return false;
+        }
+        // Ctrl+U
+        if (e.ctrlKey && e.keyCode === 'U'.charCodeAt(0)) {
+            return false;
+        }
+      }
+    </script>
   </body>
 </html>
