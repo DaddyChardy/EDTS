@@ -44,11 +44,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpe
       <div className="h-full px-3 py-4 overflow-y-auto bg-white border-r border-slate-200 dark:bg-slate-800 dark:border-slate-700">
         <div className="flex items-center justify-between ps-2.5 mb-5">
             <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8 text-sky-600 mr-3">
-                    <path d="M3.375 3C2.339 3 1.5 3.84 1.5 4.875v.75c0 1.036.84 1.875 1.875 1.875h17.25c1.035 0 1.875-.84 1.875-1.875v-.75C22.5 3.839 21.66 3 20.625 3H3.375z" />
-                    <path fillRule="evenodd" d="M3.087 9l.54 9.176A3 3 0 006.62 21h10.757a3 3 0 002.995-2.824L20.914 9H3.087zm6.133 2.845a.75.75 0 011.06 0l1.72 1.72a.75.75 0 101.06-1.06l-1.72-1.72a.75.75 0 00-1.06 0l-1.72 1.72a.75.75 0 101.06 1.06l1.72-1.72z" clipRule="evenodd" />
-                </svg>
-                <span className="self-center text-xl font-semibold whitespace-nowrap text-slate-800 dark:text-white">eDTS Tandag</span>
+                <img src="https://images.seeklogo.com/logo-png/35/1/department-of-agrarian-reform-logo-png_seeklogo-354283.png" alt="DAR SDS Logo" className="h-10 w-10 mr-3" />
+                <span className="self-center text-xl font-semibold whitespace-nowrap text-slate-800 dark:text-white">DAR EDTS</span>
             </div>
             <button onClick={onClose} className="lg:hidden p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200">
                 <CloseIcon className="w-6 h-6" />

@@ -8,12 +8,64 @@ interface SuperAdminPageProps {
   allDocuments: Document[];
   onAddUser: (user: Omit<User, 'id'>) => void;
   onDeleteUserRequest: (user: User) => void;
+  onUpdateUser: (user: User) => void;
 }
 
-const UserManagement: React.FC<Omit<SuperAdminPageProps, 'allDocuments'>> = ({ allUsers, onAddUser, onDeleteUserRequest }) => {
+const EditUserModal: React.FC<{
+  user: User;
+  onSave: (user: User) => void;
+  onClose: () => void;
+}> = ({ user, onSave, onClose }) => {
+  const [name, setName] = useState(user.name);
+  const [office, setOffice] = useState(user.office);
+  const [role, setRole] = useState<UserRole>(user.role);
+
+  const formInputStyle = "mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
+  const formLabelStyle = "block text-sm font-medium text-slate-700 dark:text-slate-300";
+
+  const handleSave = () => {
+    if (!name || !office || !role) return;
+    onSave({ ...user, name, office, role });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 dark:bg-black/70 z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+        <h3 className="text-lg font-bold mb-4 text-slate-900 dark:text-slate-100">Edit User Profile</h3>
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="edit-name" className={formLabelStyle}>Full Name</label>
+            <input type="text" id="edit-name" value={name} onChange={e => setName(e.target.value)} className={formInputStyle} required />
+          </div>
+          <div>
+            <label htmlFor="edit-office" className={formLabelStyle}>Office/Section</label>
+            <select id="edit-office" value={office} onChange={e => setOffice(e.target.value)} className={formInputStyle} required>
+              <option value="" disabled>-- Select office --</option>
+              {OFFICES.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="edit-role" className={formLabelStyle}>Role</label>
+            <select id="edit-role" value={role} onChange={e => setRole(e.target.value as UserRole)} className={formInputStyle} required>
+              {Object.values(UserRole).map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end gap-4">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-md hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600">Cancel</button>
+          <button onClick={handleSave} className="px-6 py-2 text-sm font-medium text-white bg-sky-600 rounded-md shadow-sm hover:bg-sky-700">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const UserManagement: React.FC<Omit<SuperAdminPageProps, 'allDocuments'>> = ({ allUsers, onAddUser, onDeleteUserRequest, onUpdateUser }) => {
     const [name, setName] = useState('');
     const [office, setOffice] = useState('');
     const [role, setRole] = useState<UserRole>(UserRole.STAFF);
+    const [editingUser, setEditingUser] = useState<User | null>(null);
 
     const handleAddUser = (e: React.FormEvent) => {
         e.preventDefault();
@@ -32,47 +84,59 @@ const UserManagement: React.FC<Omit<SuperAdminPageProps, 'allDocuments'>> = ({ a
     const formLabelStyle = "block text-sm font-medium text-slate-700 dark:text-slate-300";
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1 bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 h-fit">
-                <h2 className="text-lg font-semibold mb-4">Add New User</h2>
-                <form onSubmit={handleAddUser} className="space-y-4">
-                     <div>
-                        <label htmlFor="name" className={formLabelStyle}>Full Name</label>
-                        <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} className={formInputStyle} required />
-                    </div>
-                     <div>
-                        <label htmlFor="office" className={formLabelStyle}>Office/Section</label>
-                        <select id="office" value={office} onChange={e => setOffice(e.target.value)} className={formInputStyle} required>
-                            <option value="" disabled>-- Select office --</option>
-                            {OFFICES.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
-                    </div>
-                     <div>
-                        <label htmlFor="role" className={formLabelStyle}>Role</label>
-                        <select id="role" value={role} onChange={e => setRole(e.target.value as UserRole)} className={formInputStyle} required>
-                           {Object.values(UserRole).map(r => <option key={r} value={r}>{r}</option>)}
-                        </select>
-                    </div>
-                    <button type="submit" className="w-full px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-md hover:bg-sky-700">Add User</button>
-                </form>
+        <>
+            {editingUser && (
+                <EditUserModal 
+                    user={editingUser} 
+                    onSave={onUpdateUser} 
+                    onClose={() => setEditingUser(null)} 
+                />
+            )}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-1 bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 h-fit">
+                    <h2 className="text-lg font-semibold mb-4">Add New User</h2>
+                    <form onSubmit={handleAddUser} className="space-y-4">
+                        <div>
+                            <label htmlFor="name" className={formLabelStyle}>Full Name</label>
+                            <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} className={formInputStyle} required />
+                        </div>
+                        <div>
+                            <label htmlFor="office" className={formLabelStyle}>Office/Section</label>
+                            <select id="office" value={office} onChange={e => setOffice(e.target.value)} className={formInputStyle} required>
+                                <option value="" disabled>-- Select office --</option>
+                                {OFFICES.map(o => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label htmlFor="role" className={formLabelStyle}>Role</label>
+                            <select id="role" value={role} onChange={e => setRole(e.target.value as UserRole)} className={formInputStyle} required>
+                            {Object.values(UserRole).map(r => <option key={r} value={r}>{r}</option>)}
+                            </select>
+                        </div>
+                        <button type="submit" className="w-full px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-md hover:bg-sky-700">Add User</button>
+                    </form>
+                </div>
+                <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h2 className="text-lg font-semibold mb-4">Existing Users</h2>
+                    <ul className="divide-y divide-slate-200 dark:divide-slate-700">
+                        {allUsers.map(user => (
+                            <li key={user.id} className="py-3 flex justify-between items-center">
+                                <div>
+                                    <p className="font-medium">{user.name}</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">{user.office} - {user.role}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => setEditingUser(user)} className="px-3 py-1 text-xs font-medium text-sky-700 bg-sky-100 rounded-md hover:bg-sky-200 dark:bg-sky-900/50 dark:text-sky-300 dark:hover:bg-sky-900">Edit</button>
+                                    {user.role !== UserRole.SUPER_ADMIN && (
+                                        <button onClick={() => handleDeleteUserClick(user)} className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900">Delete</button>
+                                    )}
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
             </div>
-            <div className="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-                <h2 className="text-lg font-semibold mb-4">Existing Users</h2>
-                <ul className="divide-y divide-slate-200 dark:divide-slate-700">
-                    {allUsers.map(user => (
-                        <li key={user.id} className="py-3 flex justify-between items-center">
-                            <div>
-                                <p className="font-medium">{user.name}</p>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">{user.office} - {user.role}</p>
-                            </div>
-                            {user.role !== UserRole.SUPER_ADMIN && (
-                                <button onClick={() => handleDeleteUserClick(user)} className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900">Delete</button>
-                            )}
-                        </li>
-                    ))}
-                </ul>
-            </div>
-        </div>
+        </>
     );
 };
 
@@ -181,7 +245,7 @@ export const SuperAdminPage: React.FC<SuperAdminPageProps> = (props) => {
         <TabButton tab="logs" label="Transaction Logs" />
       </div>
       <div>
-        {activeTab === 'users' && <UserManagement allUsers={props.allUsers} onAddUser={props.onAddUser} onDeleteUserRequest={props.onDeleteUserRequest} />}
+        {activeTab === 'users' && <UserManagement allUsers={props.allUsers} onAddUser={props.onAddUser} onDeleteUserRequest={props.onDeleteUserRequest} onUpdateUser={props.onUpdateUser}/>}
         {activeTab === 'reports' && <Reports allDocuments={props.allDocuments} />}
         {activeTab === 'logs' && <TransactionLogs allDocuments={props.allDocuments} />}
       </div>

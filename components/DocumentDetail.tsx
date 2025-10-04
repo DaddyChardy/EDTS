@@ -3,6 +3,16 @@ import { Document, DocumentHistory, DocumentStatus, User, UserRole } from '../ty
 import { StatusBadge } from './StatusBadge';
 import { ADMIN_OFFICE_NAME } from '../constants';
 import { PencilIcon } from './icons/PencilIcon';
+import { DocumentIcon } from './icons/DocumentIcon';
+import { PlusCircleIcon } from './icons/PlusCircleIcon';
+import { PaperAirplaneIcon } from './icons/PaperAirplaneIcon';
+import { ArrowDownTrayIcon } from './icons/ArrowDownTrayIcon';
+import { ArrowRightIcon } from './icons/ArrowRightIcon';
+import { CheckBadgeIcon } from './icons/CheckBadgeIcon';
+import { CheckCircleIcon } from './icons/CheckCircleIcon';
+import { XCircleIcon } from './icons/XCircleIcon';
+import { ArrowUpTrayIcon } from './icons/ArrowUpTrayIcon';
+import { ArrowUturnLeftIcon } from './icons/ArrowUturnLeftIcon';
 
 interface DocumentDetailProps {
   document: Document;
@@ -20,6 +30,58 @@ const DetailItem: React.FC<{ label: string; value: React.ReactNode }> = ({ label
     <p className="mt-1 text-sm text-slate-900 dark:text-slate-200">{value}</p>
   </div>
 );
+
+// Helper to group history items by date for a clearer timeline view
+const groupHistoryByDate = (history: DocumentHistory[]): { [key: string]: DocumentHistory[] } => {
+    if (!history || history.length === 0) return {};
+    const grouped: { [key: string]: DocumentHistory[] } = {};
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const todayStr = today.toDateString();
+    const yesterdayStr = yesterday.toDateString();
+
+    history.forEach(item => {
+        const itemDate = new Date(item.timestamp);
+        const itemDateStr = itemDate.toDateString();
+        let key: string;
+
+        if (itemDateStr === todayStr) {
+            key = 'Today';
+        } else if (itemDateStr === yesterdayStr) {
+            key = 'Yesterday';
+        } else {
+            key = itemDate.toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+        
+        if (!grouped[key]) {
+            grouped[key] = [];
+        }
+        grouped[key].push(item);
+    });
+
+    return grouped;
+};
+
+// Helper to return a specific icon based on the action type
+const getActionIcon = (action: string) => {
+    const lowerCaseAction = action.toLowerCase();
+    if (lowerCaseAction.includes('create')) return <PlusCircleIcon className="w-4 h-4" />;
+    if (lowerCaseAction.includes('sent')) return <PaperAirplaneIcon className="w-4 h-4" />;
+    if (lowerCaseAction.includes('receive')) return <ArrowDownTrayIcon className="w-4 h-4" />;
+    if (lowerCaseAction.includes('forward')) return <ArrowRightIcon className="w-4 h-4" />;
+    if (lowerCaseAction.includes('approve')) return <CheckBadgeIcon className="w-4 h-4" />;
+    if (lowerCaseAction.includes('complete') || lowerCaseAction.includes('finish')) return <CheckCircleIcon className="w-4 h-4" />;
+    if (lowerCaseAction.includes('disapprove') || lowerCaseAction.includes('cancel')) return <XCircleIcon className="w-4 h-4" />;
+    if (lowerCaseAction.includes('release')) return <ArrowUpTrayIcon className="w-4 h-4" />;
+    if (lowerCaseAction.includes('return')) return <ArrowUturnLeftIcon className="w-4 h-4" />;
+    return <DocumentIcon className="w-4 h-4" />; // A default icon
+};
 
 export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, currentUser, onUpdateDocument, onBack, allOffices, onPrintRequest, onEditRequest }) => {
     const [remarks, setRemarks] = useState('');
@@ -39,7 +101,6 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
         if (!currentUser) throw new Error("Cannot create history entry without a current user.");
         return {
             id: `h-${Date.now()}`,
-            // FIX: Removed redundant 'new' keyword.
             timestamp: new Date().toISOString(),
             action,
             user: currentUser,
@@ -100,6 +161,9 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
     };
 
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(document.trackingNumber)}`;
+    
+    const groupedHistory = groupHistoryByDate(document.history || []);
+
 
     const renderActions = () => {
         if (!currentUser) {
@@ -228,20 +292,45 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
 
                     <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
                         <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">Document History</h2>
-                        <ol className="relative border-s border-slate-200 dark:border-slate-700">
-                             {(document.history || []).map((item, index) => (
-                                <li key={item.id} className="mb-6 ms-4">
-                                    <div className={`absolute w-3 h-3 rounded-full mt-1.5 -start-1.5 border border-white dark:border-slate-800 ${index === 0 ? 'bg-sky-500' : 'bg-slate-200 dark:bg-slate-700'}`}></div>
-                                    <time className="mb-1 text-xs font-normal leading-none text-slate-400 dark:text-slate-500">{new Date(item.timestamp).toLocaleString()}</time>
-                                    <h3 className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
-                                        {item.action} 
-                                        {index === 0 && <span className="text-xs font-bold text-sky-600 dark:text-sky-400">LATEST</span>}
-                                    </h3>
-                                    <p className="text-sm font-normal text-slate-500 dark:text-slate-400">by {item.user.name} at {item.office}</p>
-                                    {item.remarks && <p className="mt-1 text-sm font-normal text-slate-600 dark:text-slate-300 italic">"{item.remarks}"</p>}
-                                </li>
-                            ))}
-                        </ol>
+                        <div className="space-y-6">
+                            {Object.keys(groupedHistory).length > 0 ? (
+                                Object.entries(groupedHistory).map(([date, items]) => (
+                                    <div key={date}>
+                                        <div className="flex items-center">
+                                            <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+                                            <span className="flex-shrink mx-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">{date}</span>
+                                            <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+                                        </div>
+                                        <ol className="relative border-s border-slate-200 dark:border-slate-700 mt-4 ml-3">
+                                            {items.map((item) => {
+                                                const isLatest = document.history[0].id === item.id;
+                                                return (
+                                                    <li key={item.id} className="mb-4 ms-8">
+                                                        <span className={`absolute flex items-center justify-center w-6 h-6 rounded-full -start-[13px] ring-4 ring-white dark:ring-slate-800 ${isLatest ? 'bg-sky-200 dark:bg-sky-900' : 'bg-slate-200 dark:bg-slate-600'}`}>
+                                                            <span className={` ${isLatest ? 'text-sky-800 dark:text-sky-300' : 'text-slate-600 dark:text-slate-300'}`}>
+                                                                {getActionIcon(item.action)}
+                                                            </span>
+                                                        </span>
+                                                        <div className={`p-3 rounded-lg border ${isLatest ? 'bg-sky-50 dark:bg-slate-800/50 border-sky-200 dark:border-slate-700' : 'bg-white dark:bg-slate-800/20 border-slate-200 dark:border-slate-700/50'}`}>
+                                                            <div className="items-center justify-between sm:flex mb-1">
+                                                                <div className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                                                                    {item.action}
+                                                                </div>
+                                                                <time className="mb-1 text-xs font-normal text-slate-400 sm:order-last sm:mb-0">{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
+                                                            </div>
+                                                            <p className="text-sm font-normal text-slate-500 dark:text-slate-400">by {item.user.name} at {item.office}</p>
+                                                            {item.remarks && <p className="mt-1 text-sm font-normal text-slate-600 dark:text-slate-300 italic">"{item.remarks}"</p>}
+                                                        </div>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ol>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-sm text-center text-slate-500 dark:text-slate-400 py-4">No history to display.</p>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

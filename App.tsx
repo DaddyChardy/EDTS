@@ -7,11 +7,12 @@ import { CreateDocumentForm } from './components/CreateDocumentForm';
 import { DocumentDetail } from './components/DocumentDetail';
 import { LoginPage } from './components/LoginPage';
 import { SuperAdminPage } from './components/SuperAdminPage';
-import { QrScanner } from './components/QrScanner';
+import { TrackDocumentModal } from './components/TrackDocumentModal';
 import { OFFICES } from './constants';
-import { Document, Page, User, UserRole } from './types';
-import { getDocuments, getUsers, addDocument, updateDocument, addUser, deleteUser, seedDatabase } from './services/supabaseService';
+import { Document, Page, User, UserRole, DocumentStatus, DocumentHistory } from './types';
+import { getDocuments, getUsers, addDocument, updateDocument, addUser, deleteUser, seedDatabase, updateUser } from './services/supabaseService';
 import { ConfirmationModal } from './components/ConfirmationModal';
+import { NotificationToast } from './components/NotificationToast';
 
 
 function App() {
@@ -25,7 +26,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
   
   const [users, setUsers] = useState<User[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -37,6 +38,7 @@ function App() {
 
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [printPreviewDoc, setPrintPreviewDoc] = useState<Document | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
@@ -45,6 +47,8 @@ function App() {
     onConfirm?: () => void;
     isError?: boolean;
   }>({ isOpen: false, title: '', message: '' });
+  
+  const [notification, setNotification] = useState<{ id: number; message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -74,6 +78,10 @@ function App() {
       localStorage.removeItem('currentUser');
     }
   }, [currentUser]);
+
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+    setNotification({ id: Date.now(), message, type });
+  };
 
   const handleThemeToggle = () => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
@@ -109,6 +117,7 @@ function App() {
     if (newDoc) {
         setDocuments(prevDocs => [newDoc, ...prevDocs]);
         handleDocumentSelect(newDoc);
+        showNotification('Document created and saved as draft.');
     } else {
         setModalState({ isOpen: true, title: 'Save Failed', message: 'The document could not be saved to the database.', isError: true });
     }
@@ -122,12 +131,18 @@ function App() {
         if (selectedDocument && selectedDocument.id === updatedDoc.id) {
             setSelectedDocument(result);
         }
+        showNotification(`Status updated to "${result.status}".`);
     }
   };
   
   const handleUpdateEditedDocument = async (doc: Document) => {
-    await handleUpdateDocument(doc);
-    handleDocumentSelect(doc);
+    const result = await updateDocument(doc);
+    if (result) {
+        const newDocuments = documents.map(d => (d.id === doc.id ? result : d));
+        setDocuments(newDocuments);
+        handleDocumentSelect(result); // Navigate back to detail page with updated doc
+        showNotification('Document details saved successfully.');
+    }
   };
 
   const handleEditRequest = (doc: Document) => {
@@ -141,6 +156,20 @@ function App() {
         setUsers(prevUsers => [...prevUsers, addedUser]);
     }
   };
+
+  const handleUpdateUser = async (updatedUser: User) => {
+    const result = await updateUser(updatedUser);
+    if (result) {
+        setUsers(prevUsers => prevUsers.map(u => u.id === result.id ? result : u));
+    } else {
+        setModalState({
+            isOpen: true,
+            title: 'Update Failed',
+            message: `Could not update user "${updatedUser.name}".`,
+            isError: true,
+        });
+    }
+};
 
   const handleDeleteUserRequest = (user: User) => {
     setModalState({
@@ -180,12 +209,36 @@ function App() {
   const handleActualPrint = () => {
     window.print();
   };
-
-  const handleScanSuccess = (trackingNumber: string) => {
-    setIsScannerOpen(false);
+  
+  const handleTrackByNumber = async (trackingNumber: string) => {
     const doc = documents.find(d => d.trackingNumber === trackingNumber.trim());
     if (doc) {
-        handleDocumentSelect(doc);
+        if (
+            currentUser &&
+            doc.status === DocumentStatus.SENT &&
+            doc.recipientOffice === currentUser.office
+        ) {
+            const now = new Date().toISOString();
+            const historyEntry: DocumentHistory = {
+                id: `h-${Date.now()}`,
+                timestamp: now,
+                action: 'Received',
+                user: currentUser,
+                office: currentUser.office,
+                remarks: `Received via QR Scan/Manual Track from ${doc.history[0]?.office || doc.sender?.office || 'previous office'}.`,
+            };
+            const updatedDoc: Document = {
+                ...doc,
+                status: DocumentStatus.RECEIVED,
+                updatedAt: now,
+                history: [historyEntry, ...doc.history],
+            };
+            await handleUpdateDocument(updatedDoc);
+            handleDocumentSelect(updatedDoc);
+            showNotification('Document automatically received!');
+        } else {
+            handleDocumentSelect(doc);
+        }
     } else {
         setModalState({
             isOpen: true,
@@ -197,26 +250,41 @@ function App() {
   };
 
   const filteredDocuments = useMemo(() => {
+    let userFilteredDocs: Document[] = [];
     if (!currentUser) return [];
-    if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.SUPER_ADMIN) {
-      return documents; // Admin and Super Admin see everything
+
+    if (currentUser.role === UserRole.SUPER_ADMIN) {
+      userFilteredDocs = documents; // Super Admin sees everything
+    } else {
+      userFilteredDocs = documents.filter(doc => {
+        // Users always see documents they created
+        if (doc.sender?.id === currentUser.id) {
+          return true;
+        }
+        
+        // Users see documents currently at their office for action,
+        // but not if the status is just 'Sent'. It must be received first.
+        const isAtMyOffice = doc.recipientOffice === currentUser.office;
+        if (isAtMyOffice && doc.status !== DocumentStatus.SENT) {
+          return true;
+        }
+
+        return false;
+      });
     }
     
-    return documents.filter(doc => {
-      // Users always see documents they created
-      if (doc.sender?.id === currentUser.id) {
-        return true;
-      }
-      
-      // Users see documents currently at their office for action
-      const isAtMyOffice = doc.recipientOffice === currentUser.office;
-      if (isAtMyOffice) {
-        return true;
-      }
+    if (!searchQuery) {
+        return userFilteredDocs;
+    }
 
-      return false;
-    });
-  }, [documents, currentUser]);
+    const lowercasedQuery = searchQuery.toLowerCase().trim();
+    return userFilteredDocs.filter(doc => 
+        doc.title.toLowerCase().includes(lowercasedQuery) ||
+        doc.description.toLowerCase().includes(lowercasedQuery) ||
+        doc.trackingNumber.toLowerCase().includes(lowercasedQuery) ||
+        (doc.sender?.name || '').toLowerCase().includes(lowercasedQuery)
+    );
+  }, [documents, currentUser, searchQuery]);
 
 
   const renderContent = () => {
@@ -225,7 +293,29 @@ function App() {
       case 'dashboard':
         return <Dashboard documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />;
       case 'documents':
-        return <div className="p-4 sm:p-8"><DocumentList documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} /></div>;
+        return (
+            <div className="p-4 sm:p-8 space-y-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">All Documents</h1>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Browse and manage all your accessible documents.</p>
+                </div>
+                <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search by title, tracking #, sender..."
+                        className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md leading-5 bg-white dark:bg-slate-700 dark:border-slate-600 text-slate-900 dark:text-slate-200 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:placeholder-slate-400 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+                    />
+                </div>
+                <DocumentList documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />
+            </div>
+        );
       case 'create':
         return <CreateDocumentForm currentUser={currentUser} onAddDocument={handleAddDocument} onCancel={() => handleNavigate('dashboard')} allOffices={OFFICES.filter(o => o !== currentUser.office)} />;
       case 'edit':
@@ -261,6 +351,7 @@ function App() {
             allDocuments={documents}
             onAddUser={handleAddUser}
             onDeleteUserRequest={handleDeleteUserRequest}
+            onUpdateUser={handleUpdateUser}
         />;
       default:
         return <Dashboard documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />;
@@ -308,7 +399,7 @@ function App() {
         theme={theme}
         onThemeToggle={handleThemeToggle}
         onMenuClick={() => setIsSidebarOpen(true)}
-        onScanClick={() => setIsScannerOpen(true)}
+        onTrackClick={() => setIsTrackingModalOpen(true)}
       />
       <main className="lg:ml-64 pt-16">
         {renderContent()}
@@ -323,11 +414,15 @@ function App() {
           ></div>
       )}
 
-      {/* QR Scanner Modal */}
-      {isScannerOpen && (
-          <QrScanner 
-              onScanSuccess={handleScanSuccess} 
-              onClose={() => setIsScannerOpen(false)} 
+      {/* Document Tracking Modal */}
+      {isTrackingModalOpen && (
+          <TrackDocumentModal 
+              isOpen={isTrackingModalOpen}
+              onClose={() => setIsTrackingModalOpen(false)}
+              onManualSubmit={(trackingNumber) => {
+                  setIsTrackingModalOpen(false);
+                  handleTrackByNumber(trackingNumber);
+              }}
           />
       )}
 
@@ -344,25 +439,20 @@ function App() {
 
       {/* Print Preview Modal */}
       {printPreviewDoc && (
-        <div id="print-overlay" className="fixed inset-0 bg-black/60 dark:bg-black/70 z-50 flex items-center justify-center p-4">
-            <div id="print-modal-content" className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+        <div id="print-overlay" className="fixed inset-0 bg-black/60 dark:bg-black/70 z-50 flex items-center justify-center p-4 overflow-auto">
+            <div id="print-modal-content" className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-4xl border border-slate-200 dark:border-slate-700">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Print QR Code</h3>
                     <button onClick={() => setPrintPreviewDoc(null)} className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200">&times;</button>
                 </div>
                 
-                <div className="printable-area border-t border-slate-200 dark:border-slate-600 pt-4 text-center">
-                    <div className="flex gap-4 items-center p-2 text-left">
-                        <img 
+                <div className="printable-area bg-white text-black p-4">
+                    <div className="text-center">
+                         <img 
                             src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(printPreviewDoc.trackingNumber)}`} 
-                            alt="QR Code" 
-                            className="border p-1 bg-white"
+                            alt="QR Code"
                         />
-                        <div className="font-mono text-sm text-slate-800 dark:text-slate-200">
-                            <p className="font-sans font-semibold">Document Tracking No</p>
-                            <p>{new Date(printPreviewDoc.createdAt).toLocaleDateString()}</p>
-                            <p>{printPreviewDoc.trackingNumber}</p>
-                        </div>
+                        <p className="font-mono text-sm mt-1">{printPreviewDoc.trackingNumber}</p>
                     </div>
                 </div>
 
@@ -372,6 +462,16 @@ function App() {
                 </div>
             </div>
         </div>
+      )}
+
+      {/* Notification Toast */}
+      {notification && (
+        <NotificationToast
+          key={notification.id}
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
       )}
     </div>
   );

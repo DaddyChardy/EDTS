@@ -2,9 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="https://images.seeklogo.com/logo-png/35/1/department-of-agrarian-reform-logo-png_seeklogo-354283.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Enhanced Document Tracking System</title>
+    <title>DAR EDTS - Document Tracking System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       // Configure Tailwind to use the class strategy for dark mode
@@ -34,37 +34,67 @@
       }
     </script>
     <style>
+      /* Add screen-only style for the print preview area */
+      .printable-area {
+        border: 1px dashed #9ca3af;
+        min-height: 150px;
+      }
+      
       @media print {
+        @page {
+          size: letter; /* 8.5in x 11in, standard bond paper */
+          margin: 0.5in;
+        }
+
         /* Hide everything in the body by default */
         body > *:not(#print-overlay) {
           display: none !important;
         }
 
-        /* Make the overlay and its content visible */
-        #print-overlay, #print-modal-content, .printable-area {
-          display: block !important;
-          visibility: visible !important;
-        }
-
-        /* Reset overlay styles for printing */
-        #print-overlay {
-          position: static;
-          background: none !important;
-        }
-        
-        #print-modal-content {
-          box-shadow: none;
-          border: none;
-          padding: 0;
-          margin: 0;
+        /* Reset body styles to ensure it uses the full page area */
+        html, body {
           width: 100%;
           height: 100%;
-          color: black; /* Ensure text is black for printing */
+          margin: 0;
+          padding: 0;
+        }
+
+        /* Make the overlay and its content container visible and full-sized */
+        #print-overlay, #print-modal-content {
+          display: block !important;
+          visibility: visible !important;
+          position: static !important;
+          width: 100% !important;
+          height: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+          box-shadow: none !important;
+          background: none !important;
         }
 
         /* Hide the non-printable parts of the modal (title, buttons) */
         #print-modal-content > *:not(.printable-area) {
           display: none !important;
+        }
+
+        /* Use flexbox to position the content within the full-page printable area */
+        .printable-area {
+            visibility: visible !important;
+            box-sizing: border-box;
+            width: 100% !important;
+            height: 100% !important;
+            padding: 0 !important;
+            border: none !important;
+            background: none !important;
+            display: flex !important;
+            justify-content: flex-end; /* Horizontal alignment: right */
+            align-items: flex-start;  /* Vertical alignment: top */
+        }
+
+        /* Force all text inside to be black */
+        .printable-area * {
+            color: black !important;
         }
       }
     </style>

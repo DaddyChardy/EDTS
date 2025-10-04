@@ -1,6 +1,6 @@
 {
-  "name": "Enhanced Document Tracking System",
-  "description": "A web application to streamline the handling of internal and external documents within SDO Tandag City. It allows users to create, send,receive, track, and finalize documents with full audit logs.",
+  "name": "Copy of DAR SDS Document Tracking System",
+  "description": "A web application to streamline the handling of internal and external documents within the Department of Agrarian Reform - Surigao Del Sur. It allows users to create, send, receive, track, and finalize documents with full audit logs.",
   "requestFramePermissions": [
     "camera"
   ]

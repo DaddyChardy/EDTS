@@ -11,7 +11,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export const seedDatabase = async () => {
     const { data: users, error } = await supabase.from('users').select('id').limit(1);
     if (error) {
-        console.error("Error checking users for seeding:", error);
+        console.error("Error checking users for seeding:", JSON.stringify(error, null, 2));
         return;
     }
 
@@ -19,7 +19,7 @@ export const seedDatabase = async () => {
         console.log("Database empty, seeding users...");
         const { error: seedError } = await supabase.from('users').insert(USERS);
         if (seedError) {
-            console.error("Error seeding users:", seedError);
+            console.error("Error seeding users:", JSON.stringify(seedError, null, 2));
         } else {
             console.log("Users seeded successfully.");
         }
@@ -30,7 +30,7 @@ export const seedDatabase = async () => {
 export const getUsers = async (): Promise<User[]> => {
     const { data, error } = await supabase.from('users').select('*');
     if (error) {
-        console.error('Error fetching users:', error);
+        console.error('Error fetching users:', JSON.stringify(error, null, 2));
         return [];
     }
     return data || [];
@@ -43,7 +43,7 @@ export const getDocuments = async (): Promise<Document[]> => {
     const { data, error } = await supabase.from('documents').select('*, sender:users(id, name, office, role)');
     
     if (error) {
-        console.error('Error fetching documents:', error);
+        console.error('Error fetching documents:', JSON.stringify(error, null, 2));
         return [];
     }
     
@@ -57,7 +57,7 @@ export const addUser = async (user: Omit<User, 'id'>): Promise<User | null> => {
     const newUser = { ...user, id: `user-${Date.now()}` };
     const { data, error } = await supabase.from('users').insert(newUser).select().single();
     if (error) {
-        console.error('Error adding user:', error);
+        console.error('Error adding user:', JSON.stringify(error, null, 2));
         return null;
     }
     return data;
@@ -69,7 +69,7 @@ export const deleteUser = async (userId: string): Promise<void> => {
     const { data, error } = await supabase.from('users').delete().eq('id', userId).select();
 
     if (error) {
-        console.error('Error deleting user:', error);
+        console.error('Error deleting user:', JSON.stringify(error, null, 2));
         throw new Error(`Failed to delete user. Database error: ${error.message}`);
     }
 
@@ -82,13 +82,29 @@ export const deleteUser = async (userId: string): Promise<void> => {
     console.log('Successfully deleted user:', data);
 };
 
+export const updateUser = async (user: User): Promise<User | null> => {
+    const { id, ...rest } = user;
+    const { data, error } = await supabase
+        .from('users')
+        .update(rest)
+        .eq('id', id)
+        .select()
+        .single();
+    
+    if (error) {
+        console.error('Error updating user:', JSON.stringify(error, null, 2));
+        return null;
+    }
+    return data;
+};
+
 export const addDocument = async (doc: Document): Promise<Document | null> => {
     const { sender, ...rest } = doc;
     const dbDocPayload = { ...rest, sender_id: sender!.id }; // New docs must have a sender
     
     const { error } = await supabase.from('documents').insert(dbDocPayload);
     if (error) {
-        console.error('Error adding document:', error);
+        console.error('Error adding document:', JSON.stringify(error, null, 2));
         return null;
     }
     // Return the original doc with the full sender object to update local state without a refetch
