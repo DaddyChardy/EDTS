@@ -43,56 +43,58 @@
       @media print {
         @page {
           size: letter; /* 8.5in x 11in, standard bond paper */
-          margin: 0.5in;
+          margin: 0.5in; /* Adjust margins as needed */
         }
 
-        /* Hide everything in the body by default */
+        /* Hide everything except the print overlay and its contents */
         body > *:not(#print-overlay) {
           display: none !important;
         }
 
-        /* Reset body styles to ensure it uses the full page area */
+        /* Reset body styles for printing */
         html, body {
           width: 100%;
           height: 100%;
           margin: 0;
           padding: 0;
+          background: white !important;
         }
 
-        /* Make the overlay and its content container visible and full-sized */
+        /* Make the print overlay and modal content take up the full page */
         #print-overlay, #print-modal-content {
-          display: block !important;
-          visibility: visible !important;
           position: static !important;
           width: 100% !important;
           height: 100% !important;
-          margin: 0 !important;
-          padding: 0 !important;
+          display: block !important;
+          background: none !important;
           border: none !important;
           box-shadow: none !important;
-          background: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          overflow: visible !important;
         }
 
-        /* Hide the non-printable parts of the modal (title, buttons) */
+        /* Hide the modal's header and footer for printing */
         #print-modal-content > *:not(.printable-area) {
           display: none !important;
         }
 
-        /* Use flexbox to position the content within the full-page printable area */
+        /* The printable-area becomes the main container for the page content */
         .printable-area {
-            visibility: visible !important;
-            box-sizing: border-box;
-            width: 100% !important;
-            height: 100% !important;
-            padding: 0 !important;
-            border: none !important;
-            background: none !important;
-            display: flex !important;
-            justify-content: flex-end; /* Horizontal alignment: right */
-            align-items: flex-start;  /* Vertical alignment: top */
+          width: 100%;
+          height: 100%;
+          display: flex !important;
+          justify-content: flex-end;  /* Align content to the right */
+          align-items: flex-start;   /* Align content to the top */
+          padding: 0 !important;
+          border: none !important;
         }
-
-        /* Force all text inside to be black */
+        
+        /* Ensure the content inside is visible and styled for print */
+        .qr-container {
+          text-align: center;
+        }
+        
         .printable-area * {
             color: black !important;
         }

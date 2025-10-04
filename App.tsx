@@ -446,8 +446,8 @@ function App() {
                     <button onClick={() => setPrintPreviewDoc(null)} className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200">&times;</button>
                 </div>
                 
-                <div className="printable-area bg-white text-black p-4">
-                    <div className="text-center">
+                <div className="printable-area p-4">
+                    <div className="qr-container">
                          <img 
                             src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(printPreviewDoc.trackingNumber)}`} 
                             alt="QR Code"
