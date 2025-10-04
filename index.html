@@ -46,8 +46,8 @@
           margin: 0.5in; /* Adjust margins as needed */
         }
 
-        /* Hide everything except the print overlay and its contents */
-        body > *:not(#print-overlay) {
+        /* Hide all components inside the main app div except for the print overlay */
+        #root > div > *:not(#print-overlay) {
           display: none !important;
         }
 
