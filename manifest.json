@@ -1,0 +1,23 @@
+{
+  "name": "DAR EDTS - Document Tracking System",
+  "short_name": "DAR EDTS",
+  "description": "A web application to streamline the handling of internal and external documents within the Department of Agrarian Reform - Surigao Del Sur.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#0284c7",
+  "icons": [
+    {
+      "src": "https://images.seeklogo.com/logo-png/35/1/department-of-agrarian-reform-logo-png_seeklogo-354283.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://images.seeklogo.com/logo-png/35/1/department-of-agrarian-reform-logo-png_seeklogo-354283.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

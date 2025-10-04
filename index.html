@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="https://images.seeklogo.com/logo-png/35/1/department-of-agrarian-reform-logo-png_seeklogo-354283.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0284c7" />
+    <link rel="manifest" href="/manifest.json" />
+
     <title>DAR EDTS - Document Tracking System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -133,6 +138,18 @@
         if (e.ctrlKey && e.keyCode === 'U'.charCodeAt(0)) {
             return false;
         }
+      }
+    </script>
+    <!-- PWA Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(registration => {
+            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+          }, err => {
+            console.log('ServiceWorker registration failed: ', err);
+          });
+        });
       }
     </script>
   </body>
