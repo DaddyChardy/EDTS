@@ -1,134 +1,167 @@
-import { createClient } from '@supabase/supabase-js';
+
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Document, User } from '../types';
 import { USERS } from '../constants';
 
+// Initialize the Supabase client with the provided credentials
 const supabaseUrl = 'https://iykviztdoelnxaqhcvyb.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5a3ZpenRkb2VsbnhhcWhjdnliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MzU2NDYsImV4cCI6MjA3NDUxMTY0Nn0.ITCLGdHXKOlcgt3rU5msgWD8eA39T9uGePCGIgJjzuc';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
-// Seeding function to populate initial data if tables are empty
-export const seedDatabase = async () => {
-    const { data: users, error } = await supabase.from('users').select('id').limit(1);
-    if (error) {
-        console.error("Error checking users for seeding:", JSON.stringify(error, null, 2));
-        return;
-    }
 
-    if (!users || users.length === 0) {
-        console.log("Database empty, seeding users...");
-        const { error: seedError } = await supabase.from('users').insert(USERS);
-        if (seedError) {
-            console.error("Error seeding users:", JSON.stringify(seedError, null, 2));
-        } else {
-            console.log("Users seeded successfully.");
+// Checks if the database is empty and seeds it with initial users.
+export const seedDatabase = async (): Promise<void> => {
+    try {
+        const { count, error: checkError } = await supabase
+            .from('users')
+            .select('*', { count: 'exact', head: true });
+
+        if (checkError) {
+            console.error("Error checking users for seeding:", checkError);
+            return;
         }
+
+        if (count === 0) {
+            console.log("Database empty, seeding users...");
+            const { error: insertError } = await supabase.from('users').insert(USERS);
+            if (insertError) {
+                console.error("Error seeding users:", insertError);
+            }
+        }
+    } catch (e) {
+        console.error("Error during seeding check:", e);
     }
 };
 
-// Data fetching functions
+// Fetches all users from the database.
 export const getUsers = async (): Promise<User[]> => {
     const { data, error } = await supabase.from('users').select('*');
     if (error) {
-        console.error('Error fetching users:', JSON.stringify(error, null, 2));
+        console.error("Error fetching users:", error);
         return [];
     }
     return data || [];
 };
 
+// Fetches all documents, joining the sender's user data.
+// Assumes a 'sender_id' foreign key in the 'documents' table pointing to 'users.id'.
 export const getDocuments = async (): Promise<Document[]> => {
-    // Fetch documents and join the sender's user data using the foreign key relationship.
-    // The result is aliased to `sender` to match the application's `Document` type.
-    // Using a left join (no '!') so that if sender_id is null, the document is still returned.
-    const { data, error } = await supabase.from('documents').select('*, sender:users(id, name, office, role)');
+    const { data, error } = await supabase
+        .from('documents')
+        .select('*, sender:users(*)');
     
     if (error) {
-        console.error('Error fetching documents:', JSON.stringify(error, null, 2));
+        console.error("Error fetching documents:", error);
         return [];
     }
-    
-    // The query returns `sender` as an object, which matches the `Document` type.
-    return (data as Document[]) || [];
+    return (data as any[]) || [];
 };
 
-
-// Data manipulation functions
+// Adds a new user to the database.
 export const addUser = async (user: Omit<User, 'id'>): Promise<User | null> => {
-    const newUser = { ...user, id: `user-${Date.now()}` };
-    const { data, error } = await supabase.from('users').insert(newUser).select().single();
-    if (error) {
-        console.error('Error adding user:', JSON.stringify(error, null, 2));
-        return null;
-    }
-    return data;
-};
-
-export const deleteUser = async (userId: string): Promise<void> => {
-    // By adding .select(), the response will contain the deleted data.
-    // This allows us to confirm that a row was actually deleted.
-    const { data, error } = await supabase.from('users').delete().eq('id', userId).select();
-
-    if (error) {
-        console.error('Error deleting user:', JSON.stringify(error, null, 2));
-        throw new Error(`Failed to delete user. Database error: ${error.message}`);
-    }
-
-    // Check if any rows were actually deleted. If not, it's a silent failure.
-    if (!data || data.length === 0) {
-        console.warn('Delete operation completed with no error, but no user was deleted. This is likely a Row Level Security (RLS) issue.');
-        throw new Error('Could not delete user. Please check your database permissions. If Row Level Security is enabled on the `users` table, you need a policy that allows public delete operations.');
-    }
-
-    console.log('Successfully deleted user:', data);
-};
-
-export const updateUser = async (user: User): Promise<User | null> => {
-    const { id, ...rest } = user;
     const { data, error } = await supabase
         .from('users')
-        .update(rest)
-        .eq('id', id)
+        .insert([user])
         .select()
         .single();
     
     if (error) {
-        console.error('Error updating user:', JSON.stringify(error, null, 2));
+        console.error("Error adding user:", error);
         return null;
     }
     return data;
 };
 
-export const addDocument = async (doc: Document): Promise<Document | null> => {
-    const { sender, ...rest } = doc;
-    const dbDocPayload = { ...rest, sender_id: sender!.id }; // New docs must have a sender
-    
-    const { error } = await supabase.from('documents').insert(dbDocPayload);
-    if (error) {
-        console.error('Error adding document:', JSON.stringify(error, null, 2));
-        return null;
+// Deletes a user after nullifying their references in the documents table.
+export const deleteUser = async (userId: string): Promise<void> => {
+    // Set sender_id to null for documents created by this user to avoid foreign key constraints.
+    const { error: updateDocError } = await supabase
+        .from('documents')
+        .update({ sender_id: null })
+        .eq('sender_id', userId);
+
+    if (updateDocError) {
+        console.error("Error nullifying sender on documents:", updateDocError);
     }
-    // Return the original doc with the full sender object to update local state without a refetch
-    return doc;
+    
+    const { error: deleteUserError } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', userId);
+
+    if (deleteUserError) {
+        console.error("Error deleting user:", deleteUserError);
+        throw deleteUserError;
+    }
 };
 
-export const updateDocument = async (doc: Document): Promise<Document | null> => {
-    const { sender, ...rest } = doc;
-    const dbDocPayload = { ...rest, sender_id: sender?.id ?? null };
-
-    // Use .select() to get the updated row back, ensuring the local state is perfectly in sync with the database.
+// Updates an existing user's details.
+export const updateUser = async (user: User): Promise<User | null> => {
     const { data, error } = await supabase
-        .from('documents')
-        .update(dbDocPayload)
-        .eq('id', doc.id)
-        .select('*, sender:users(id, name, office, role)')
+        .from('users')
+        .update({ name: user.name, office: user.office, role: user.role })
+        .eq('id', user.id)
+        .select()
         .single();
 
     if (error) {
-        // Log the full error object as a string to prevent "[object Object]" and reveal the actual error message.
-        console.error('Error updating document. Details:', JSON.stringify(error, null, 2));
+        console.error("Error updating user:", error);
+        return null;
+    }
+    return data;
+};
+
+// Helper to format the Document object for DB insertion/update by replacing the `sender` object with `sender_id`.
+const mapDocForDb = (doc: Document) => {
+    const { sender, ...rest } = doc;
+    return { ...rest, sender_id: sender ? sender.id : null };
+};
+
+// Adds a new document to the database.
+export const addDocument = async (doc: Document): Promise<Document | null> => {
+    const docForDb = mapDocForDb(doc);
+
+    const { data: insertData, error: insertError } = await supabase
+        .from('documents')
+        .insert([docForDb])
+        .select() // Select the full row
+        .single();
+
+    if (insertError || !insertData) {
+        console.error("Error adding document:", insertError);
         return null;
     }
     
-    // Return the fresh data from the database.
-    return data as Document | null;
+    // The inserted data should already be what we want, but we need to re-fetch to join the sender object.
+    const { data: newDoc, error: selectError } = await supabase
+        .from('documents')
+        .select('*, sender:users(*)')
+        .eq('id', insertData.id)
+        .single();
+    
+    if(selectError) {
+        console.error("Error fetching new document:", selectError);
+        // Fallback to returning the inserted data without the sender object if the refetch fails
+        return { ...insertData, sender: doc.sender } as any;
+    }
+    return newDoc as any;
+};
+
+// Updates an existing document.
+export const updateDocument = async (doc: Document): Promise<Document | null> => {
+    const docForDb = mapDocForDb(doc);
+
+    const { data, error } = await supabase
+        .from('documents')
+        .update(docForDb)
+        .eq('id', doc.id)
+        .select('*, sender:users(*)')
+        .single();
+
+    if (error) {
+        console.error("Error updating document:", error);
+        return null;
+    }
+    return data as any;
 };

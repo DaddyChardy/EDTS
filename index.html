@@ -20,8 +20,8 @@
           "react/": "https://aistudiocdn.com/react@^19.1.1/",
           "react": "https://aistudiocdn.com/react@^19.1.1",
           "react-dom": "https://aistudiocdn.com/react-dom@^19.1.1",
-          "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
-          "jsqr": "https://esm.sh/jsqr@1.4.0"
+          "jsqr": "https://esm.sh/jsqr@1.4.0",
+          "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
         }
       }
     </script>
@@ -81,17 +81,18 @@
 
         /* The printable-area becomes the main container for the page content */
         .printable-area {
+          position: relative !important; /* Set positioning context */
           width: 100%;
           height: 100%;
-          display: flex !important;
-          justify-content: flex-end;  /* Align content to the right */
-          align-items: flex-start;   /* Align content to the top */
           padding: 0 !important;
           border: none !important;
         }
         
-        /* Ensure the content inside is visible and styled for print */
+        /* Position the QR code container absolutely to the top right for printing */
         .qr-container {
+          position: absolute !important;
+          top: 0;
+          right: 0;
           text-align: center;
         }
         
