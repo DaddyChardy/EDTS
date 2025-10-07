@@ -1,6 +1,5 @@
-
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Document, User } from '../types';
+import { Document, User, Office } from '../types';
 import { USERS } from '../constants';
 
 // Initialize the Supabase client with the provided credentials
@@ -9,28 +8,26 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
-
 // Checks if the database is empty and seeds it with initial users.
+// Office seeding should be done via the Supabase SQL editor as per instructions
+// to avoid client-side RLS issues.
 export const seedDatabase = async (): Promise<void> => {
     try {
-        const { count, error: checkError } = await supabase
+        // Seed Users
+        // FIX: Corrected a syntax error in the Supabase query.
+        const { count: userCount, error: userCheckError } = await supabase
             .from('users')
             .select('*', { count: 'exact', head: true });
 
-        if (checkError) {
-            console.error("Error checking users for seeding:", checkError);
-            return;
-        }
-
-        if (count === 0) {
+        if (userCheckError) throw userCheckError;
+        if (userCount === 0) {
             console.log("Database empty, seeding users...");
             const { error: insertError } = await supabase.from('users').insert(USERS);
-            if (insertError) {
-                console.error("Error seeding users:", insertError);
-            }
+            if (insertError) throw insertError;
         }
-    } catch (e) {
-        console.error("Error during seeding check:", e);
+
+    } catch (e: any) {
+        console.error("Error during database seeding:", e.message || e);
     }
 };
 
@@ -96,13 +93,33 @@ export const deleteUser = async (userId: string): Promise<void> => {
     }
 };
 
+// Uploads a new avatar for a user to the 'avatars' storage bucket.
+export const uploadAvatar = async (userId: string, file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true }); // upsert: true allows overwriting
+
+    if (uploadError) {
+        console.error('Error uploading avatar:', uploadError.message);
+        throw new Error(uploadError.message);
+    }
+
+    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    return data.publicUrl;
+};
+
+
 // Updates an existing user's details.
 export const updateUser = async (user: User): Promise<User | null> => {
     const { data, error } = await supabase
         .from('users')
-        .update({ name: user.name, office: user.office, role: user.role })
+        .update({ name: user.name, office: user.office, role: user.role, position: user.position, avatar_url: user.avatar_url })
         .eq('id', user.id)
-        .select()
+        .select('*') // Select all columns to get the updated row
         .single();
 
     if (error) {
@@ -164,4 +181,56 @@ export const updateDocument = async (doc: Document): Promise<Document | null> =>
         return null;
     }
     return data as any;
+};
+
+// Fetches all offices from the database.
+export const getOffices = async (): Promise<Office[]> => {
+    const { data, error } = await supabase.from('offices').select('*').order('name');
+    if (error) {
+        console.error("Error fetching offices:", error);
+        return [];
+    }
+    return data || [];
+};
+
+// Adds a new office to the database.
+export const addOffice = async (officeName: string): Promise<Office> => {
+    const { data, error } = await supabase
+        .from('offices')
+        .insert([{ name: officeName }])
+        .select()
+        .single();
+    
+    if (error) {
+        console.error("Error adding office:", error.message);
+        throw new Error(error.message);
+    }
+    return data;
+};
+
+// Deletes an office, but only if it's not in use by any user.
+export const deleteOffice = async (officeName: string): Promise<void> => {
+    const { count, error: checkError } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('office', officeName);
+
+    if (checkError) {
+        console.error("Error checking office usage:", checkError.message);
+        throw new Error(`Could not verify if office is in use: ${checkError.message}`);
+    }
+
+    if (count !== null && count > 0) {
+        throw new Error(`Cannot delete "${officeName}". It is assigned to ${count} user(s).`);
+    }
+
+    const { error: deleteError } = await supabase
+        .from('offices')
+        .delete()
+        .eq('name', officeName);
+
+    if (deleteError) {
+        console.error("Error deleting office:", deleteError.message);
+        throw new Error(deleteError.message);
+    }
 };

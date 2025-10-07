@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { CheckIcon } from './icons/CheckIcon';
 import { CloseIcon } from './icons/CloseIcon';
+import { ExclamationIcon } from './icons/ExclamationIcon';
 
 interface NotificationToastProps {
   message: string;
@@ -17,23 +18,25 @@ export const NotificationToast: React.FC<NotificationToastProps> = ({ message, t
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
-  const icon = type === 'success' ? <CheckIcon className="w-6 h-6 text-white" /> : null;
+  const successStyles = 'bg-slate-800 border-green-500';
+  const errorStyles = 'bg-slate-800 border-red-500';
+  
+  const icon = type === 'success' 
+    ? <div className="p-2 bg-green-500/20 rounded-full"><CheckIcon className="w-5 h-5 text-green-400" /></div>
+    : <div className="p-2 bg-red-500/20 rounded-full"><ExclamationIcon className="w-5 h-5 text-red-400" /></div>;
 
   return (
     <div 
-      className={`fixed bottom-5 right-5 z-50 flex items-center w-full max-w-xs p-4 text-white ${bgColor} rounded-lg shadow-lg transition-transform transform-gpu animate-toast-in`}
+      className={`fixed bottom-5 right-5 z-50 flex items-center gap-4 w-full max-w-sm p-4 text-white border-l-4 ${type === 'success' ? successStyles : errorStyles} rounded-lg shadow-2xl transition-transform transform-gpu animate-toast-in`}
       role="alert"
     >
-      <div className="flex-shrink-0">
-        {icon}
-      </div>
-      <div className="ms-3 text-sm font-medium">
+      {icon}
+      <div className="text-sm font-medium text-slate-200">
         {message}
       </div>
       <button 
         type="button" 
-        className="ms-auto -mx-1.5 -my-1.5 bg-white/20 text-white hover:text-white/80 rounded-lg focus:ring-2 focus:ring-white/50 p-1.5 hover:bg-white/30 inline-flex items-center justify-center h-8 w-8" 
+        className="ms-auto -mx-1.5 -my-1.5 text-slate-400 hover:text-white rounded-lg focus:ring-2 focus:ring-slate-500 p-1.5 inline-flex items-center justify-center h-8 w-8" 
         onClick={onClose} 
         aria-label="Close"
       >

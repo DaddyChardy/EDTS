@@ -27,10 +27,10 @@ const NavItem: React.FC<{
         e.preventDefault();
         onClick();
       }}
-      className={`flex items-center p-3 rounded-lg text-slate-900 hover:bg-sky-100 dark:text-white dark:hover:bg-slate-700 group ${isActive ? 'bg-sky-100 dark:bg-slate-700 font-semibold' : ''}`}
+      className={`flex items-center p-3 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-sky-100 dark:hover:bg-slate-800 group transition-colors duration-200 ${isActive ? 'bg-sky-100 dark:bg-slate-800 text-sky-600 dark:text-sky-200 font-semibold' : ''}`}
     >
       {icon}
-      <span className="ms-3">{label}</span>
+      <span className="ms-4 text-base">{label}</span>
     </a>
   </li>
 );
@@ -38,46 +38,46 @@ const NavItem: React.FC<{
 export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpen, onClose, currentUser }) => {
   return (
     <aside 
-      className={`fixed top-0 left-0 z-50 w-64 h-screen transition-transform lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`} 
+      className={`fixed top-0 left-0 z-50 w-72 h-screen transition-transform lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`} 
       aria-label="Sidebar"
     >
-      <div className="h-full px-3 py-4 overflow-y-auto bg-white border-r border-slate-200 dark:bg-slate-800 dark:border-slate-700">
-        <div className="flex items-center justify-between ps-2.5 mb-5">
+      <div className="h-full px-4 py-6 overflow-y-auto bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between ps-2.5 mb-8">
             <div className="flex items-center">
                 <img src="https://images.seeklogo.com/logo-png/35/1/department-of-agrarian-reform-logo-png_seeklogo-354283.png" alt="DAR SDS Logo" className="h-10 w-10 mr-3" />
-                <span className="self-center text-xl font-semibold whitespace-nowrap text-slate-800 dark:text-white">DAR EDTS</span>
+                <span className="self-center text-xl font-bold whitespace-nowrap text-slate-800 dark:text-white">DAR EDTS</span>
             </div>
             <button onClick={onClose} className="lg:hidden p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200">
                 <CloseIcon className="w-6 h-6" />
                 <span className="sr-only">Close sidebar</span>
             </button>
         </div>
-        <ul className="space-y-2 font-medium">
+        <ul className="space-y-3 font-medium">
           <NavItem
-            icon={<DashboardIcon className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white" />}
+            icon={<DashboardIcon className="w-6 h-6 text-slate-500 transition duration-75 group-hover:text-slate-900 dark:text-slate-400 dark:group-hover:text-white" />}
             label="Dashboard"
             isActive={currentPage === 'dashboard'}
             onClick={() => onNavigate('dashboard')}
           />
           <NavItem
-            icon={<DocumentIcon className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white" />}
+            icon={<DocumentIcon className="w-6 h-6 text-slate-500 transition duration-75 group-hover:text-slate-900 dark:text-slate-400 dark:group-hover:text-white" />}
             label="Documents"
             isActive={currentPage === 'documents'}
             onClick={() => onNavigate('documents')}
           />
           {currentUser.role === UserRole.SUPER_ADMIN && (
              <NavItem
-                icon={<ShieldIcon className="w-5 h-5 text-gray-500 transition duration-75 group-hover:text-gray-900 dark:text-gray-400 dark:group-hover:text-white" />}
+                icon={<ShieldIcon className="w-6 h-6 text-slate-500 transition duration-75 group-hover:text-slate-900 dark:text-slate-400 dark:group-hover:text-white" />}
                 label="Super Admin"
                 isActive={currentPage === 'superadmin'}
                 onClick={() => onNavigate('superadmin')}
               />
           )}
         </ul>
-        <div className="mt-8">
+        <div className="mt-10">
             <button 
                 onClick={() => onNavigate('create')}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-sky-600 rounded-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition-all duration-200"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 text-md font-semibold text-white bg-sky-600 rounded-lg hover:bg-sky-700 focus:outline-none focus:ring-4 focus:ring-sky-300 dark:focus:ring-sky-800 transition-all duration-200 shadow-md hover:shadow-lg"
             >
                 <PlusIcon className="w-5 h-5"/>
                 Create Document

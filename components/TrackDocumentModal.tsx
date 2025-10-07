@@ -114,12 +114,12 @@ export const TrackDocumentModal: React.FC<TrackDocumentModalProps> = ({ isOpen, 
 
   return (
     <div 
-      className="fixed inset-0 bg-black/60 dark:bg-black/70 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       aria-labelledby="track-modal-title"
       role="dialog"
       aria-modal="true"
     >
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+      <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100" id="track-modal-title">
             Track a Document

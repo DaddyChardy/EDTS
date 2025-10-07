@@ -23,6 +23,8 @@ export interface User {
   name: string;
   office: string;
   role: UserRole;
+  position: string;
+  avatar_url?: string;
 }
 
 export interface DocumentHistory {
@@ -50,4 +52,10 @@ export interface Document {
   history: DocumentHistory[];
 }
 
-export type Page = 'dashboard' | 'documents' | 'create' | 'detail' | 'superadmin' | 'edit';
+export interface Office {
+    id: number;
+    name: string;
+    created_at: string;
+}
+
+export type Page = 'dashboard' | 'documents' | 'create' | 'detail' | 'superadmin' | 'edit' | 'profile';

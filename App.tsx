@@ -8,9 +8,9 @@ import { DocumentDetail } from './components/DocumentDetail';
 import { LoginPage } from './components/LoginPage';
 import { SuperAdminPage } from './components/SuperAdminPage';
 import { TrackDocumentModal } from './components/TrackDocumentModal';
-import { OFFICES } from './constants';
+import { ProfilePage } from './components/ProfilePage';
 import { Document, Page, User, UserRole, DocumentStatus, DocumentHistory } from './types';
-import { getDocuments, getUsers, addDocument, updateDocument, addUser, deleteUser, seedDatabase, updateUser } from './services/supabaseService';
+import { getDocuments, getUsers, addDocument, updateDocument, addUser, deleteUser, seedDatabase, updateUser, getOffices, addOffice, deleteOffice, uploadAvatar } from './services/supabaseService';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { NotificationToast } from './components/NotificationToast';
 
@@ -30,6 +30,7 @@ function App() {
   
   const [users, setUsers] = useState<User[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [offices, setOffices] = useState<string[]>([]);
   
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
       const savedUser = localStorage.getItem('currentUser');
@@ -55,19 +56,21 @@ function App() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
+  const fetchData = async () => {
+      setIsLoading(true);
+      await seedDatabase(); 
+      const [fetchedUsers, fetchedDocuments, fetchedOffices] = await Promise.all([
+          getUsers(),
+          getDocuments(),
+          getOffices()
+      ]);
+      setUsers(fetchedUsers);
+      setDocuments(fetchedDocuments.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
+      setOffices(fetchedOffices.map(o => o.name).sort());
+      setIsLoading(false);
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-        setIsLoading(true);
-        // Ensure the database is seeded with initial users if it's empty
-        await seedDatabase(); 
-        const [fetchedUsers, fetchedDocuments] = await Promise.all([
-            getUsers(),
-            getDocuments()
-        ]);
-        setUsers(fetchedUsers);
-        setDocuments(fetchedDocuments.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
-        setIsLoading(false);
-    };
     fetchData();
   }, []);
 
@@ -102,7 +105,7 @@ function App() {
   const handleNavigate = (page: Page) => {
     setCurrentPage(page);
     setIsSidebarOpen(false); // Close sidebar on navigation
-    if (page !== 'detail') {
+    if (page !== 'detail' && page !== 'edit' && page !== 'profile') {
       setSelectedDocument(null);
     }
   };
@@ -150,17 +153,43 @@ function App() {
     setCurrentPage('edit');
   };
 
-  const handleAddUser = async (newUser: Omit<User, 'id'>) => {
+  const handleAddUser = async (newUser: Omit<User, 'id' | 'avatar_url'>) => {
     const addedUser = await addUser(newUser);
     if (addedUser) {
         setUsers(prevUsers => [...prevUsers, addedUser]);
+        showNotification(`User "${addedUser.name}" added successfully.`);
+    } else {
+        showNotification('Failed to add user.', 'error');
     }
   };
 
-  const handleUpdateUser = async (updatedUser: User) => {
+  const handleUpdateUser = async (userToUpdate: User, newAvatarFile?: File) => {
+    let updatedUser = { ...userToUpdate };
+
+    if (newAvatarFile) {
+        try {
+            const newAvatarUrl = await uploadAvatar(userToUpdate.id, newAvatarFile);
+            updatedUser.avatar_url = newAvatarUrl;
+        } catch (error) {
+            setModalState({
+                isOpen: true,
+                title: 'Avatar Upload Failed',
+                message: `The avatar could not be uploaded due to an error: "${error instanceof Error ? error.message : 'Unknown error'}". Your other profile changes will still be saved.`,
+                isError: true,
+            });
+        }
+    }
+    
     const result = await updateUser(updatedUser);
     if (result) {
         setUsers(prevUsers => prevUsers.map(u => u.id === result.id ? result : u));
+        
+        // If the updated user is the current user, update their session
+        if (currentUser && currentUser.id === result.id) {
+            setCurrentUser(result);
+        }
+        
+        showNotification('User profile updated.');
     } else {
         setModalState({
             isOpen: true,
@@ -169,7 +198,7 @@ function App() {
             isError: true,
         });
     }
-};
+  };
 
   const handleDeleteUserRequest = (user: User) => {
     setModalState({
@@ -192,6 +221,7 @@ function App() {
                 return doc;
             })
         );
+        showNotification('User deleted successfully.');
     } catch (error) {
         setModalState({
             isOpen: true,
@@ -202,6 +232,51 @@ function App() {
     }
   };
   
+  const handleAddOffice = async (officeName: string) => {
+    if (offices.some(o => o.toLowerCase() === officeName.toLowerCase())) {
+        showNotification(`Office "${officeName}" already exists.`, 'error');
+        return;
+    }
+    try {
+        const newOffice = await addOffice(officeName);
+        setOffices(prev => [...prev, newOffice.name].sort());
+        showNotification(`Office "${newOffice.name}" added.`);
+    } catch (error) {
+        let title = 'Failed to Add Office';
+        let message = error instanceof Error ? error.message : 'An unknown error occurred.';
+        if (error instanceof Error && error.message.includes('violates row-level security policy')) {
+            title = 'Database Permission Error';
+            message = `The action was blocked by a database security rule. The current policy for the 'offices' table requires a logged-in user, but the application is operating anonymously. To fix this, please go to your Supabase SQL Editor and update the policy to grant INSERT permission to the 'anon' role.`;
+        }
+        setModalState({ isOpen: true, title, message, isError: true });
+    }
+  };
+
+  const handleDeleteOfficeRequest = (officeName: string) => {
+    setModalState({
+        isOpen: true,
+        title: 'Delete Office Confirmation',
+        message: `Are you sure you want to delete the office "${officeName}"? This action cannot be undone.`,
+        onConfirm: () => handleDeleteOffice(officeName),
+    });
+  };
+
+  const handleDeleteOffice = async (officeName: string) => {
+    try {
+        await deleteOffice(officeName);
+        setOffices(prev => prev.filter(o => o !== officeName));
+        showNotification(`Office "${officeName}" has been deleted.`);
+    } catch (error) {
+        let title = 'Deletion Failed';
+        let message = error instanceof Error ? error.message : 'An unknown error occurred.';
+         if (error instanceof Error && error.message.includes('violates row-level security policy')) {
+            title = 'Database Permission Error';
+            message = `The action was blocked by a database security rule. The current policy for the 'offices' table requires a logged-in user, but the application is operating anonymously. To fix this, please go to your Supabase SQL Editor and update the policy to grant DELETE permission to the 'anon' role.`;
+        }
+        setModalState({ isOpen: true, title, message, isError: true });
+    }
+  };
+
   const handlePrintRequest = (doc: Document) => {
     setPrintPreviewDoc(doc);
   };
@@ -296,11 +371,11 @@ function App() {
         return (
             <div className="p-4 sm:p-8 space-y-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">All Documents</h1>
-                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Browse and manage all your accessible documents.</p>
+                    <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">All Documents</h1>
+                    <p className="mt-1 text-md text-slate-600 dark:text-slate-400">Browse and manage all your accessible documents.</p>
                 </div>
                 <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                         <svg className="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
@@ -310,21 +385,21 @@ function App() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search by title, tracking #, sender..."
-                        className="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md leading-5 bg-white dark:bg-slate-700 dark:border-slate-600 text-slate-900 dark:text-slate-200 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:placeholder-slate-400 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+                        className="block w-full pl-12 pr-3 py-3 border border-slate-300 rounded-xl leading-5 bg-white dark:bg-slate-800/50 dark:border-slate-700 text-slate-900 dark:text-slate-200 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:placeholder-slate-400 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
                     />
                 </div>
                 <DocumentList documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />
             </div>
         );
       case 'create':
-        return <CreateDocumentForm currentUser={currentUser} onAddDocument={handleAddDocument} onCancel={() => handleNavigate('dashboard')} allOffices={OFFICES.filter(o => o !== currentUser.office)} />;
+        return <CreateDocumentForm currentUser={currentUser} onAddDocument={handleAddDocument} onCancel={() => handleNavigate('dashboard')} allOffices={offices.filter(o => o !== currentUser.office)} />;
       case 'edit':
         if (selectedDocument) {
           return <CreateDocumentForm 
                     currentUser={currentUser} 
                     onUpdateDocument={handleUpdateEditedDocument} 
                     onCancel={() => handleDocumentSelect(selectedDocument)} 
-                    allOffices={OFFICES.filter(o => o !== currentUser.office)}
+                    allOffices={offices.filter(o => o !== currentUser.office)}
                     documentToEdit={selectedDocument} 
                  />;
         }
@@ -336,12 +411,14 @@ function App() {
                     currentUser={currentUser} 
                     onUpdateDocument={handleUpdateDocument} 
                     onBack={() => handleNavigate('documents')} 
-                    allOffices={OFFICES}
+                    allOffices={offices}
                     onPrintRequest={handlePrintRequest}
                     onEditRequest={handleEditRequest}
                  />;
         }
         return null; 
+       case 'profile':
+        return <ProfilePage currentUser={currentUser} onUpdateUser={handleUpdateUser} onBack={() => handleNavigate('dashboard')} />;
       case 'superadmin':
         if (currentUser.role !== UserRole.SUPER_ADMIN) {
             return <Dashboard documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />;
@@ -349,9 +426,12 @@ function App() {
         return <SuperAdminPage
             allUsers={users}
             allDocuments={documents}
+            allOffices={offices}
             onAddUser={handleAddUser}
             onDeleteUserRequest={handleDeleteUserRequest}
             onUpdateUser={handleUpdateUser}
+            onAddOffice={handleAddOffice}
+            onDeleteOfficeRequest={handleDeleteOfficeRequest}
         />;
       default:
         return <Dashboard documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />;
@@ -360,8 +440,11 @@ function App() {
   
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-900">
-        <div className="text-xl font-semibold text-slate-700 dark:text-slate-300">Loading Application...</div>
+      <div className="flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-950">
+        <div className="flex flex-col items-center gap-4">
+            <img src="https://images.seeklogo.com/logo-png/35/1/department-of-agrarian-reform-logo-png_seeklogo-354283.png" alt="DAR Logo" className="h-20 w-20 animate-pulse" />
+            <div className="text-lg font-semibold text-slate-700 dark:text-slate-300">Loading Application...</div>
+        </div>
       </div>
     );
   }
@@ -385,7 +468,7 @@ function App() {
   }
 
   return (
-    <div className="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 min-h-screen">
+    <div className="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 min-h-screen font-sans">
       <Sidebar 
         currentPage={currentPage} 
         onNavigate={handleNavigate} 
@@ -400,8 +483,9 @@ function App() {
         onThemeToggle={handleThemeToggle}
         onMenuClick={() => setIsSidebarOpen(true)}
         onTrackClick={() => setIsTrackingModalOpen(true)}
+        onProfileClick={() => handleNavigate('profile')}
       />
-      <main className="lg:ml-64 pt-16">
+      <main className="lg:ml-72 pt-20">
         {renderContent()}
       </main>
 

@@ -26,8 +26,8 @@ interface DocumentDetailProps {
 
 const DetailItem: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
   <div>
-    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
-    <p className="mt-1 text-sm text-slate-900 dark:text-slate-200">{value}</p>
+    <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{label}</p>
+    <p className="mt-1 text-md text-slate-800 dark:text-slate-200">{value}</p>
   </div>
 );
 
@@ -173,65 +173,65 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
         // Any user can send a document they created, if it's a draft
         if (status === DocumentStatus.DRAFT && document.sender?.id === currentUserId) {
             return (
-                <>
-                    <button onClick={() => onEditRequest && onEditRequest(document)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-200 rounded-md hover:bg-slate-300 dark:text-slate-200 dark:bg-slate-600 dark:hover:bg-slate-500 flex items-center gap-2">
+                <div className="flex flex-wrap gap-3">
+                    <button onClick={() => onEditRequest && onEditRequest(document)} className="px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-200 rounded-lg hover:bg-slate-300 dark:text-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 flex items-center gap-2">
                         <PencilIcon className="w-4 h-4" /> Edit
                     </button>
-                    <button onClick={() => onPrintRequest && onPrintRequest(document)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-200 rounded-md hover:bg-slate-300 dark:text-slate-200 dark:bg-slate-600 dark:hover:bg-slate-500">Print QR Code</button>
-                    <button onClick={() => handleAction(DocumentStatus.SENT, "Sent", `Sent to ${document.recipientOffice}`)} className="px-4 py-2 text-sm font-medium text-white bg-sky-600 rounded-md hover:bg-sky-700">Send Document</button>
-                </>
+                    <button onClick={() => onPrintRequest && onPrintRequest(document)} className="px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-200 rounded-lg hover:bg-slate-300 dark:text-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600">Print QR Code</button>
+                    <button onClick={() => handleAction(DocumentStatus.SENT, "Sent", `Sent to ${document.recipientOffice}`)} className="px-5 py-2 text-sm font-semibold text-white bg-sky-600 rounded-lg hover:bg-sky-700 shadow-sm">Send Document</button>
+                </div>
             )
         }
 
         // Both Admin and the Recipient can receive a document
         if (status === DocumentStatus.SENT && (role === UserRole.ADMIN || office === document.recipientOffice)) {
              const fromOffice = lastAction?.office || document.sender?.office || 'the previous office';
-             return <button onClick={() => handleAction(DocumentStatus.RECEIVED, "Received", `Received from ${fromOffice}`)} className="px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-md hover:bg-cyan-700">Receive</button>
+             return <button onClick={() => handleAction(DocumentStatus.RECEIVED, "Received", `Received from ${fromOffice}`)} className="px-5 py-2 text-sm font-semibold text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 shadow-sm">Receive Document</button>
         }
 
         if (status === DocumentStatus.RECEIVED && lastAction && office === lastAction.office) {
             // If received by Admin (Records), they can route it or action it directly
             if(office === ADMIN_OFFICE_NAME) {
                 return (
-                    <>
-                        <button onClick={() => setShowForwardModal(true)} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">Forward</button>
-                        <button onClick={() => handleAction(DocumentStatus.APPROVED, "Approved", "Directly approved by Admin")} className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">Approve</button>
-                        <button onClick={() => handleAction(DocumentStatus.COMPLETED, "Completed", "Transaction ended by Admin")} className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700">Mark as Completed</button>
-                    </>
+                    <div className="flex flex-wrap gap-3">
+                        <button onClick={() => setShowForwardModal(true)} className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm">Forward</button>
+                        <button onClick={() => handleAction(DocumentStatus.APPROVED, "Approved", "Directly approved by Admin")} className="px-5 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 shadow-sm">Approve</button>
+                        <button onClick={() => handleAction(DocumentStatus.COMPLETED, "Completed", "Transaction ended by Admin")} className="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 shadow-sm">Mark as Completed</button>
+                    </div>
                 )
             }
             // If the original sender gets it back, they can re-forward it
             if(document.sender?.id === currentUserId) {
-                return <button onClick={() => setShowForwardModal(true)} className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700">Forward</button>
+                return <button onClick={() => setShowForwardModal(true)} className="px-5 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-sm">Forward</button>
             }
             // Any other recipient can approve/RTS/cancel
             return (
-                <>
-                    <button onClick={() => handleAction(DocumentStatus.APPROVED, "Approved")} className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">Approved</button>
-                    <button onClick={handleReturnToSender} disabled={!document.sender} className="px-4 py-2 text-sm font-medium text-white bg-yellow-600 rounded-md hover:bg-yellow-700 disabled:bg-slate-400 disabled:cursor-not-allowed">RTS (Return to Sender)</button>
-                    <button onClick={() => handleAction(DocumentStatus.DISAPPROVED, "Cancel")} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700">Cancel</button>
-                </>
+                <div className="flex flex-wrap gap-3">
+                    <button onClick={() => handleAction(DocumentStatus.APPROVED, "Approved")} className="px-5 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 shadow-sm">Approve</button>
+                    <button onClick={handleReturnToSender} disabled={!document.sender} className="px-5 py-2 text-sm font-semibold text-white bg-yellow-600 rounded-lg hover:bg-yellow-700 shadow-sm disabled:bg-slate-400 disabled:cursor-not-allowed">Return to Sender</button>
+                    <button onClick={() => handleAction(DocumentStatus.DISAPPROVED, "Cancel")} className="px-5 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-sm">Cancel</button>
+                </div>
             )
         }
 
         if (status === DocumentStatus.FORWARDED && office === document.recipientOffice) {
             const fromOffice = lastAction?.office || 'the previous office';
-            return <button onClick={() => handleAction(DocumentStatus.RECEIVED, "Received", `Received from ${fromOffice}`)} className="px-4 py-2 text-sm font-medium text-white bg-cyan-600 rounded-md hover:bg-cyan-700">Receive</button>
+            return <button onClick={() => handleAction(DocumentStatus.RECEIVED, "Received", `Received from ${fromOffice}`)} className="px-5 py-2 text-sm font-semibold text-white bg-cyan-600 rounded-lg hover:bg-cyan-700 shadow-sm">Receive Document</button>
         }
 
         if (status === DocumentStatus.APPROVED && role === UserRole.ADMIN) {
              return (
-                <>
-                    <button onClick={() => handleAction(DocumentStatus.COMPLETED, "Completed", "Transaction Ended")} className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700">Mark as Completed</button>
-                    <button onClick={() => handleAction(DocumentStatus.RELEASED, "Released", "Marked for release")} className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700">For Release</button>
-                </>
+                <div className="flex flex-wrap gap-3">
+                    <button onClick={() => handleAction(DocumentStatus.COMPLETED, "Completed", "Transaction Ended")} className="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 shadow-sm">Mark as Completed</button>
+                    <button onClick={() => handleAction(DocumentStatus.RELEASED, "Released", "Marked for release")} className="px-5 py-2 text-sm font-semibold text-white bg-purple-600 rounded-lg hover:bg-purple-700 shadow-sm">For Release</button>
+                </div>
              )
         }
         
         // Sender confirms completion after release
         if (status === DocumentStatus.RELEASED && document.sender?.id === currentUserId) {
             return (
-                <button onClick={() => handleAction(DocumentStatus.COMPLETED, "Transaction Finished", "Released document received by sender.")} className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-md hover:bg-emerald-700">
+                <button onClick={() => handleAction(DocumentStatus.COMPLETED, "Transaction Finished", "Released document received by sender.")} className="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 shadow-sm">
                     Finish Transaction
                 </button>
             );
@@ -243,40 +243,43 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
 
     return (
         <div className="p-4 sm:p-8 max-w-7xl mx-auto">
-            <button onClick={onBack} className="mb-6 text-sm font-medium text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300">
-                &larr; {currentUser ? 'Back to documents' : 'Back to Home'}
+            <button onClick={onBack} className="mb-6 text-sm font-semibold text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300 flex items-center gap-2">
+                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                </svg>
+                {currentUser ? 'Back to documents' : 'Back to Home'}
             </button>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Main Content */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
+                    <div className="bg-white dark:bg-slate-900/50 p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
                         <div className="flex justify-between items-start flex-wrap gap-4">
                             <div>
-                                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">{document.title}</h1>
-                                <p className="text-sm font-mono text-slate-500 dark:text-slate-400 mt-1">{document.trackingNumber}</p>
+                                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">{document.title}</h1>
+                                <p className="text-sm font-mono text-slate-500 dark:text-slate-400 mt-2">{document.trackingNumber}</p>
                             </div>
                             <div className="flex-shrink-0">
                                 <StatusBadge status={document.status} />
                             </div>
                         </div>
-                        <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                             <DetailItem label="Category" value={document.category} />
-                            <DetailItem label="Priority" value={document.priority} />
+                            <DetailItem label="Priority" value={<span className={`font-semibold ${document.priority === 'High' ? 'text-red-500' : document.priority === 'Medium' ? 'text-yellow-500' : 'text-green-500'}`}>{document.priority}</span>} />
                             <DetailItem label="Sender" value={document.sender ? `${document.sender.name} (${document.sender.office})` : 'Unknown User'} />
                             <DetailItem label="Intended Recipient" value={document.recipientOffice} />
                             <DetailItem label="Delivery Type" value={document.deliveryType} />
                             <DetailItem label="Created At" value={new Date(document.createdAt).toLocaleString()} />
                             <div className="md:col-span-2">
-                                <DetailItem label="Description" value={<p className="whitespace-pre-wrap">{document.description}</p>} />
+                                <DetailItem label="Description" value={<p className="whitespace-pre-wrap text-slate-600 dark:text-slate-300">{document.description}</p>} />
                             </div>
                         </div>
                     </div>
 
                     {/* Action Form */}
                     {currentUser && (
-                      <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-                          <h2 className="text-lg font-semibold dark:text-slate-200">Available Actions</h2>
-                          <div className="mt-4 flex flex-wrap gap-4 items-center">
+                      <div className="bg-white dark:bg-slate-900/50 p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+                          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-200">Available Actions</h2>
+                          <div className="mt-4">
                               {renderActions()}
                           </div>
                       </div>
@@ -285,13 +288,13 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
 
                 {/* Sidebar */}
                 <div className="space-y-6">
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col items-center">
-                        <img src={qrCodeUrl} alt="QR Code for tracking number" className="w-40 h-40 border-4 border-slate-200 dark:border-slate-600 p-1 rounded-lg"/>
+                    <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col items-center">
+                        <img src={qrCodeUrl} alt="QR Code for tracking number" className="w-40 h-40 border-4 border-slate-200 dark:border-slate-700 p-1 rounded-lg"/>
                         <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Scan to track document</p>
                     </div>
 
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
-                        <h2 className="text-lg font-semibold mb-4 dark:text-slate-200">Document History</h2>
+                    <div className="bg-white dark:bg-slate-900/50 p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+                        <h2 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-200">Document History</h2>
                         <div className="space-y-6">
                             {Object.keys(groupedHistory).length > 0 ? (
                                 Object.entries(groupedHistory).map(([date, items]) => (
@@ -301,13 +304,13 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
                                             <span className="flex-shrink mx-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">{date}</span>
                                             <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
                                         </div>
-                                        <ol className="relative border-s border-slate-200 dark:border-slate-700 mt-4 ml-3">
+                                        <ol className="relative border-s-2 border-slate-200 dark:border-slate-700 mt-4 ml-3">
                                             {items.map((item) => {
                                                 const isLatest = document.history[0].id === item.id;
                                                 return (
-                                                    <li key={item.id} className="mb-4 ms-8">
-                                                        <span className={`absolute flex items-center justify-center w-6 h-6 rounded-full -start-[13px] ring-4 ring-white dark:ring-slate-800 ${isLatest ? 'bg-sky-200 dark:bg-sky-900' : 'bg-slate-200 dark:bg-slate-600'}`}>
-                                                            <span className={` ${isLatest ? 'text-sky-800 dark:text-sky-300' : 'text-slate-600 dark:text-slate-300'}`}>
+                                                    <li key={item.id} className="mb-6 ms-8">
+                                                        <span className={`absolute flex items-center justify-center w-6 h-6 rounded-full -start-[13px] ring-8 ring-white dark:ring-slate-900/50 ${isLatest ? 'bg-sky-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                                                            <span className={`text-white`}>
                                                                 {getActionIcon(item.action)}
                                                             </span>
                                                         </span>
@@ -319,7 +322,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
                                                                 <time className="mb-1 text-xs font-normal text-slate-400 sm:order-last sm:mb-0">{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
                                                             </div>
                                                             <p className="text-sm font-normal text-slate-500 dark:text-slate-400">by {item.user.name} at {item.office}</p>
-                                                            {item.remarks && <p className="mt-1 text-sm font-normal text-slate-600 dark:text-slate-300 italic">"{item.remarks}"</p>}
+                                                            {item.remarks && <p className="mt-2 text-sm font-normal text-slate-600 dark:text-slate-300 italic p-2 bg-slate-100 dark:bg-slate-700/50 rounded-md">"{item.remarks}"</p>}
                                                         </div>
                                                     </li>
                                                 );
@@ -338,7 +341,7 @@ export const DocumentDetail: React.FC<DocumentDetailProps> = ({ document, curren
             {/* Forward Modal */}
             {showForwardModal && currentUser && (
                 <div className="fixed inset-0 bg-black/60 dark:bg-black/70 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
                         <h3 className="text-lg font-bold mb-4 text-slate-900 dark:text-slate-100">Forward Document</h3>
                         <div className="space-y-4">
                             <div>
