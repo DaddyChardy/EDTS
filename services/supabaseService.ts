@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Document, User, Office } from '../types';
+import { Document, User, Office, Notification } from '../types';
 import { USERS } from '../constants';
 
 // Initialize the Supabase client with the provided credentials
@@ -7,6 +7,68 @@ const supabaseUrl = 'https://iykviztdoelnxaqhcvyb.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml5a3ZpenRkb2VsbnhhcWhjdnliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MzU2NDYsImV4cCI6MjA3NDUxMTY0Nn0.ITCLGdHXKOlcgt3rU5msgWD8eA39T9uGePCGIgJjzuc';
 
 const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+
+const handleSupabaseError = (error: any, context: string): string => {
+    const errorMessage = error?.message || 'An unknown error occurred.';
+    console.error(`Error ${context}:`, errorMessage);
+
+    if (typeof errorMessage === 'string') {
+        // Specific check for the missing 'notifications' table
+        if (errorMessage.includes("relation \"public.notifications\" does not exist") || errorMessage.includes("Could not find the table 'public.notifications'")) {
+            console.error(
+`--------------------------------------------------------------------------------
+[DATABASE SETUP REQUIRED] The 'notifications' table is missing.
+--------------------------------------------------------------------------------
+The application tried to access the notifications table, but it doesn't exist
+in your Supabase database. Please run the following SQL script in your
+Supabase SQL Editor to create the table and set the required permissions.
+
+-- 1. Create the 'notifications' table
+CREATE TABLE public.notifications (
+    id TEXT PRIMARY KEY DEFAULT ('notif_' || substr(md5(random()::text), 0, 15)),
+    user_id TEXT REFERENCES public.users(id) ON DELETE CASCADE,
+    document_id TEXT REFERENCES public.documents(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now() NOT NULL
+);
+
+-- 2. Enable Row Level Security (RLS) for the new table
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+-- 3. Create a policy to allow the application (using the anon key) to access the table
+CREATE POLICY "Allow anon full access to notifications"
+ON public.notifications
+FOR ALL
+TO anon
+USING (true)
+WITH CHECK (true);
+
+--------------------------------------------------------------------------------`
+            );
+            return `Database setup required: The 'notifications' table is missing. Check the developer console for the fix.`;
+        }
+
+        // Generic hint for other Row Level Security (RLS) issues
+        if (errorMessage.includes('security policy') || errorMessage.includes('violates row-level security')) {
+            console.error(
+                `[RLS Hint] This error is likely due to a Row Level Security (RLS) policy on the table involved in the '${context}' action. ` +
+                `Since the app uses anonymous access (anon key), you may need to create policies that allow the 'anon' role to perform this action. ` +
+                `For example, to allow all actions on a table for anonymous users, you can run a SQL command like:
+      
+      CREATE POLICY "Allow anon full access" 
+      ON public.your_table_name_here
+      FOR ALL
+      TO anon
+      USING (true)
+      WITH CHECK (true);
+      `
+            );
+        }
+    }
+    return errorMessage;
+};
+
 
 // Checks if the database is empty and seeds it with initial users.
 // Office seeding should be done via the Supabase SQL editor as per instructions
@@ -35,7 +97,7 @@ export const seedDatabase = async (): Promise<void> => {
 export const getUsers = async (): Promise<User[]> => {
     const { data, error } = await supabase.from('users').select('*');
     if (error) {
-        console.error("Error fetching users:", error);
+        handleSupabaseError(error, "fetching users");
         return [];
     }
     return data || [];
@@ -49,7 +111,7 @@ export const getDocuments = async (): Promise<Document[]> => {
         .select('*, sender:users(*)');
     
     if (error) {
-        console.error("Error fetching documents:", error);
+        handleSupabaseError(error, "fetching documents");
         return [];
     }
     return (data as any[]) || [];
@@ -64,7 +126,7 @@ export const addUser = async (user: Omit<User, 'id'>): Promise<User | null> => {
         .single();
     
     if (error) {
-        console.error("Error adding user:", error);
+        handleSupabaseError(error, "adding user");
         return null;
     }
     return data;
@@ -79,7 +141,7 @@ export const deleteUser = async (userId: string): Promise<void> => {
         .eq('sender_id', userId);
 
     if (updateDocError) {
-        console.error("Error nullifying sender on documents:", updateDocError);
+        handleSupabaseError(updateDocError, "nullifying sender on documents");
     }
     
     const { error: deleteUserError } = await supabase
@@ -88,8 +150,7 @@ export const deleteUser = async (userId: string): Promise<void> => {
         .eq('id', userId);
 
     if (deleteUserError) {
-        console.error("Error deleting user:", deleteUserError);
-        throw deleteUserError;
+        throw new Error(handleSupabaseError(deleteUserError, "deleting user"));
     }
 };
 
@@ -104,8 +165,7 @@ export const uploadAvatar = async (userId: string, file: File): Promise<string> 
         .upload(filePath, file, { upsert: true }); // upsert: true allows overwriting
 
     if (uploadError) {
-        console.error('Error uploading avatar:', uploadError.message);
-        throw new Error(uploadError.message);
+        throw new Error(handleSupabaseError(uploadError, "uploading avatar"));
     }
 
     const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
@@ -123,7 +183,7 @@ export const updateUser = async (user: User): Promise<User | null> => {
         .single();
 
     if (error) {
-        console.error("Error updating user:", error);
+        handleSupabaseError(error, "updating user");
         return null;
     }
     return data;
@@ -146,7 +206,7 @@ export const addDocument = async (doc: Document): Promise<Document | null> => {
         .single();
 
     if (insertError || !insertData) {
-        console.error("Error adding document:", insertError);
+        handleSupabaseError(insertError, "adding document");
         return null;
     }
     
@@ -158,7 +218,7 @@ export const addDocument = async (doc: Document): Promise<Document | null> => {
         .single();
     
     if(selectError) {
-        console.error("Error fetching new document:", selectError);
+        handleSupabaseError(selectError, "fetching new document");
         // Fallback to returning the inserted data without the sender object if the refetch fails
         return { ...insertData, sender: doc.sender } as any;
     }
@@ -177,7 +237,7 @@ export const updateDocument = async (doc: Document): Promise<Document | null> =>
         .single();
 
     if (error) {
-        console.error("Error updating document:", error);
+        handleSupabaseError(error, "updating document");
         return null;
     }
     return data as any;
@@ -187,7 +247,7 @@ export const updateDocument = async (doc: Document): Promise<Document | null> =>
 export const getOffices = async (): Promise<Office[]> => {
     const { data, error } = await supabase.from('offices').select('*').order('name');
     if (error) {
-        console.error("Error fetching offices:", error);
+        handleSupabaseError(error, "fetching offices");
         return [];
     }
     return data || [];
@@ -202,8 +262,7 @@ export const addOffice = async (officeName: string): Promise<Office> => {
         .single();
     
     if (error) {
-        console.error("Error adding office:", error.message);
-        throw new Error(error.message);
+        throw new Error(handleSupabaseError(error, "adding office"));
     }
     return data;
 };
@@ -216,8 +275,7 @@ export const deleteOffice = async (officeName: string): Promise<void> => {
         .eq('office', officeName);
 
     if (checkError) {
-        console.error("Error checking office usage:", checkError.message);
-        throw new Error(`Could not verify if office is in use: ${checkError.message}`);
+        throw new Error(handleSupabaseError(checkError, "checking office usage"));
     }
 
     if (count !== null && count > 0) {
@@ -230,7 +288,67 @@ export const deleteOffice = async (officeName: string): Promise<void> => {
         .eq('name', officeName);
 
     if (deleteError) {
-        console.error("Error deleting office:", deleteError.message);
-        throw new Error(deleteError.message);
+        throw new Error(handleSupabaseError(deleteError, "deleting office"));
     }
+};
+
+// NOTIFICATIONS
+
+// Fetches notifications for a specific user, newest first.
+export const getNotificationsForUser = async (userId: string): Promise<Notification[]> => {
+    const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        handleSupabaseError(error, "fetching notifications");
+        return [];
+    }
+    return data || [];
+};
+
+// Adds a new notification to the database.
+export const addNotification = async (notification: Omit<Notification, 'id' | 'created_at' | 'is_read'>): Promise<Notification | null> => {
+    const { data, error } = await supabase
+        .from('notifications')
+        .insert([notification])
+        .select()
+        .single();
+    
+    if (error) {
+        handleSupabaseError(error, "adding notification");
+        return null;
+    }
+    return data;
+};
+
+// Marks all unread notifications for a user as read.
+export const markAllNotificationsAsRead = async (userId: string): Promise<boolean> => {
+    const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('user_id', userId)
+        .eq('is_read', false);
+
+    if (error) {
+        handleSupabaseError(error, "marking all notifications as read");
+        return false;
+    }
+    return true;
+};
+
+// Marks a single notification as read.
+export const markNotificationAsRead = async (notificationId: string): Promise<boolean> => {
+    const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notificationId);
+
+    if (error) {
+        handleSupabaseError(error, "marking notification as read");
+        return false;
+    }
+    return true;
 };

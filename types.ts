@@ -58,4 +58,13 @@ export interface Office {
     created_at: string;
 }
 
+export interface Notification {
+  id: string;
+  user_id: string;
+  message: string;
+  document_id: string;
+  is_read: boolean;
+  created_at: string;
+}
+
 export type Page = 'dashboard' | 'documents' | 'create' | 'detail' | 'superadmin' | 'edit' | 'profile';

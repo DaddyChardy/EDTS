@@ -9,8 +9,8 @@ import { LoginPage } from './components/LoginPage';
 import { SuperAdminPage } from './components/SuperAdminPage';
 import { TrackDocumentModal } from './components/TrackDocumentModal';
 import { ProfilePage } from './components/ProfilePage';
-import { Document, Page, User, UserRole, DocumentStatus, DocumentHistory } from './types';
-import { getDocuments, getUsers, addDocument, updateDocument, addUser, deleteUser, seedDatabase, updateUser, getOffices, addOffice, deleteOffice, uploadAvatar } from './services/supabaseService';
+import { Document, Page, User, UserRole, DocumentStatus, DocumentHistory, Notification } from './types';
+import { getDocuments, getUsers, addDocument, updateDocument, addUser, deleteUser, seedDatabase, updateUser, getOffices, addOffice, deleteOffice, uploadAvatar, getNotificationsForUser, addNotification, markNotificationAsRead, markAllNotificationsAsRead } from './services/supabaseService';
 import { ConfirmationModal } from './components/ConfirmationModal';
 import { NotificationToast } from './components/NotificationToast';
 
@@ -40,6 +40,7 @@ function App() {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [printPreviewDoc, setPrintPreviewDoc] = useState<Document | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
@@ -67,6 +68,14 @@ function App() {
       setUsers(fetchedUsers);
       setDocuments(fetchedDocuments.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()));
       setOffices(fetchedOffices.map(o => o.name).sort());
+
+      const savedUserStr = localStorage.getItem('currentUser');
+      if (savedUserStr) {
+          const savedUser = JSON.parse(savedUserStr);
+          const userNotifications = await getNotificationsForUser(savedUser.id);
+          setNotifications(userNotifications);
+      }
+
       setIsLoading(false);
   };
 
@@ -77,8 +86,10 @@ function App() {
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      getNotificationsForUser(currentUser.id).then(setNotifications);
     } else {
       localStorage.removeItem('currentUser');
+      setNotifications([]); // Clear notifications on logout
     }
   }, [currentUser]);
 
@@ -126,7 +137,56 @@ function App() {
     }
   };
 
+  const createAndDispatchNotifications = async (updatedDoc: Document, previousStatus: DocumentStatus) => {
+      if (!currentUser) return;
+
+      const newStatus = updatedDoc.status;
+      const docTitle = updatedDoc.title.substring(0, 30);
+      const notificationsToAdd: Omit<Notification, 'id' | 'created_at' | 'is_read'>[] = [];
+      
+      // Notify recipients when a document is sent or forwarded to their office
+      if ((newStatus === DocumentStatus.SENT || newStatus === DocumentStatus.FORWARDED) && newStatus !== previousStatus) {
+          const recipientUsers = users.filter(u => u.office === updatedDoc.recipientOffice && u.id !== currentUser.id);
+          recipientUsers.forEach(user => {
+              notificationsToAdd.push({
+                  user_id: user.id,
+                  document_id: updatedDoc.id,
+                  message: `Document "${docTitle}..." was sent to your office by ${currentUser.name}.`
+              });
+          });
+      }
+
+      // Notify sender about progress
+      if (updatedDoc.sender && updatedDoc.sender.id !== currentUser.id) {
+          let message = '';
+          if (newStatus === DocumentStatus.RECEIVED && newStatus !== previousStatus) {
+              message = `Your document "${docTitle}..." was received by ${currentUser.name} at ${currentUser.office}.`;
+          } else if (newStatus === DocumentStatus.APPROVED && newStatus !== previousStatus) {
+              message = `Your document "${docTitle}..." was approved by ${currentUser.name}.`;
+          } else if (newStatus === DocumentStatus.COMPLETED && newStatus !== previousStatus) {
+              message = `Your document "${docTitle}..." has been marked as completed.`;
+          } else if (newStatus === DocumentStatus.DISAPPROVED && newStatus !== previousStatus) {
+              message = `Your document "${docTitle}..." was disapproved by ${currentUser.name}.`;
+          }
+          
+          if (message) {
+              notificationsToAdd.push({
+                  user_id: updatedDoc.sender.id,
+                  document_id: updatedDoc.id,
+                  message: message
+              });
+          }
+      }
+
+      for (const notif of notificationsToAdd) {
+          await addNotification(notif);
+      }
+  };
+
   const handleUpdateDocument = async (updatedDoc: Document) => {
+    const originalDoc = documents.find(d => d.id === updatedDoc.id);
+    const previousStatus = originalDoc ? originalDoc.status : updatedDoc.status;
+
     const result = await updateDocument(updatedDoc);
     if (result) {
         const newDocuments = documents.map(doc => (doc.id === updatedDoc.id ? result : doc));
@@ -135,6 +195,13 @@ function App() {
             setSelectedDocument(result);
         }
         showNotification(`Status updated to "${result.status}".`);
+
+        await createAndDispatchNotifications(result, previousStatus);
+        
+        if(currentUser) {
+            const userNotifications = await getNotificationsForUser(currentUser.id);
+            setNotifications(userNotifications);
+        }
     }
   };
   
@@ -324,6 +391,24 @@ function App() {
     }
   };
 
+  const handleNotificationClick = async (notification: Notification) => {
+      const doc = documents.find(d => d.id === notification.document_id);
+      if (doc) {
+          handleDocumentSelect(doc);
+      }
+      if (!notification.is_read) {
+          await markNotificationAsRead(notification.id);
+          setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
+      }
+  };
+
+  const handleMarkAllAsRead = async () => {
+      if (!currentUser) return;
+      await markAllNotificationsAsRead(currentUser.id);
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+  };
+
+
   const filteredDocuments = useMemo(() => {
     let userFilteredDocs: Document[] = [];
     if (!currentUser) return [];
@@ -483,6 +568,9 @@ function App() {
         onThemeToggle={handleThemeToggle}
         onMenuClick={() => setIsSidebarOpen(true)}
         onTrackClick={() => setIsTrackingModalOpen(true)}
+        notifications={notifications}
+        onNotificationClick={handleNotificationClick}
+        onMarkAllAsRead={handleMarkAllAsRead}
         onProfileClick={() => handleNavigate('profile')}
       />
       <main className="lg:ml-72 pt-20">

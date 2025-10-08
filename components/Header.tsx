@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User } from '../types';
+import { User, Notification } from '../types';
 import { UserIcon } from './icons/UserIcon';
 import { SunIcon } from './icons/SunIcon';
 import { MoonIcon } from './icons/MoonIcon';
@@ -7,6 +7,7 @@ import { LogoutIcon } from './icons/LogoutIcon';
 import { MenuIcon } from './icons/MenuIcon';
 import { QrCodeIcon } from './icons/QrCodeIcon';
 import { ProfileIcon } from './icons/ProfileIcon';
+import { BellIcon } from './icons/BellIcon';
 
 interface HeaderProps {
   currentUser: User;
@@ -16,16 +17,26 @@ interface HeaderProps {
   onMenuClick: () => void;
   onTrackClick: () => void;
   onProfileClick: () => void;
+  notifications: Notification[];
+  onNotificationClick: (notification: Notification) => void;
+  onMarkAllAsRead: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, theme, onThemeToggle, onMenuClick, onTrackClick, onProfileClick }) => {
+export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, theme, onThemeToggle, onMenuClick, onTrackClick, onProfileClick, notifications, onNotificationClick, onMarkAllAsRead }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationOpen(false);
       }
     };
 
@@ -63,6 +74,54 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, theme, on
                 {theme === 'light' ? <MoonIcon className="w-5 h-5" /> : <SunIcon className="w-5 h-5" />}
             </button>
             
+            {/* Notification Bell */}
+            <div className="relative" ref={notificationRef}>
+                <button
+                    onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                    className="w-10 h-10 flex items-center justify-center rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors relative"
+                    aria-label="View notifications"
+                >
+                    <BellIcon className="w-6 h-6" />
+                    {unreadCount > 0 && (
+                        <span className="absolute top-1 right-1 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-950"></span>
+                    )}
+                </button>
+                {isNotificationOpen && (
+                    <div className="absolute right-0 mt-3 w-80 sm:w-96 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 max-h-[70vh] flex flex-col">
+                        <div className="p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-700">
+                            <h3 className="font-semibold text-slate-800 dark:text-slate-200">Notifications</h3>
+                            {unreadCount > 0 && (
+                                <button onClick={() => { onMarkAllAsRead(); setIsNotificationOpen(false); }} className="text-xs font-semibold text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300">
+                                    Mark all as read
+                                </button>
+                            )}
+                        </div>
+                        <ul className="flex-grow overflow-y-auto">
+                            {notifications.length > 0 ? notifications.map(n => (
+                                <li key={n.id} className={`${!n.is_read ? 'bg-sky-50 dark:bg-slate-700/50' : ''}`}>
+                                    <a
+                                        href="#"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            onNotificationClick(n);
+                                            setIsNotificationOpen(false);
+                                        }}
+                                        className="block p-4 hover:bg-slate-100 dark:hover:bg-slate-700 border-b border-slate-200 dark:border-slate-700 last:border-b-0"
+                                    >
+                                        <p className={`text-sm text-slate-700 dark:text-slate-300 ${!n.is_read ? 'font-semibold' : 'font-normal'}`}>{n.message}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                                    </a>
+                                </li>
+                            )) : (
+                                <li className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                                    You have no notifications.
+                                </li>
+                            )}
+                        </ul>
+                    </div>
+                )}
+            </div>
+
             <div className="relative" ref={dropdownRef}>
                 <button
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
