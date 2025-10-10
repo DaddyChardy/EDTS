@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="https://images.seeklogo.com/logo-png/35/1/department-of-agrarian-reform-logo-png_seeklogo-354283.png" />
+    <link rel="icon" type="image/png" href="/darlogo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <!-- PWA Meta Tags -->
@@ -65,6 +65,57 @@
       }
     </script>
     <style>
+      #background-shapes {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        overflow: hidden;
+      }
+      .shape {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(100px);
+        opacity: 0.5;
+      }
+      .shape1 {
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, #38bdf8, transparent 60%);
+        top: -100px;
+        left: -100px;
+        animation: move1 20s infinite alternate;
+      }
+      .shape2 {
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, #0369a1, transparent 60%);
+        bottom: -150px;
+        right: -150px;
+        animation: move2 25s infinite alternate;
+      }
+      .dark .shape1 {
+         background: radial-gradient(circle, #075985, transparent 70%);
+      }
+       .dark .shape2 {
+         background: radial-gradient(circle, #0c4a6e, transparent 70%);
+         opacity: 0.7;
+      }
+      @keyframes move1 {
+        from { transform: translate(0, 0) scale(1); }
+        to { transform: translate(100px, 50px) scale(1.2); }
+      }
+      @keyframes move2 {
+        from { transform: translate(0, 0) scale(1); }
+        to { transform: translate(-80px, -40px) scale(0.8); }
+      }
+      #root {
+        position: relative;
+        z-index: 1;
+      }
+
       /* Add screen-only style for the print preview area */
       .printable-area {
         border: 1px dashed #9ca3af;
@@ -89,6 +140,10 @@
           margin: 0;
           padding: 0;
           background: white !important;
+        }
+        
+        #background-shapes {
+          display: none !important;
         }
 
         /* Make the print overlay and modal content take up the full page */
@@ -133,7 +188,11 @@
       }
     </style>
   </head>
-  <body class="bg-slate-100 dark:bg-slate-950 font-sans antialiased">
+  <body class="bg-slate-200 dark:bg-slate-950 font-sans antialiased">
+    <div id="background-shapes">
+      <div class="shape shape1"></div>
+      <div class="shape shape2"></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
     <script>

@@ -13,12 +13,12 @@ interface DashboardProps {
 }
 
 const StatCard: React.FC<{ title: string; value: number; icon: React.ReactNode; color: string }> = ({ title, value, icon, color }) => (
-    <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-6">
-        <div className={`w-12 h-12 flex items-center justify-center rounded-full ${color}`}>
+    <div className="bg-white/30 dark:bg-slate-900/40 backdrop-blur-lg p-6 rounded-2xl shadow-lg border border-white/30 dark:border-slate-700/30 flex items-center gap-6">
+        <div className={`w-12 h-12 flex items-center justify-center rounded-full shadow-md ${color}`}>
             {icon}
         </div>
         <div>
-            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
+            <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{title}</p>
             <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
         </div>
     </div>

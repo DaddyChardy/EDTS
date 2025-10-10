@@ -23,7 +23,7 @@ const EditUserModal: React.FC<{
   const [office, setOffice] = useState(user.office);
   const [role, setRole] = useState<UserRole>(user.role);
 
-  const formInputStyle = "mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md text-sm shadow-sm placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
+  const formInputStyle = "mt-1 block w-full px-3 py-2 bg-white/50 dark:bg-slate-700/50 border border-slate-300/50 dark:border-slate-600/50 rounded-md text-sm shadow-sm placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
   const formLabelStyle = "block text-sm font-medium text-slate-700 dark:text-slate-300";
 
   const handleSave = () => {
@@ -33,8 +33,8 @@ const EditUserModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 dark:bg-black/70 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div className="bg-white/50 dark:bg-slate-800/70 backdrop-blur-xl p-6 rounded-2xl shadow-xl w-full max-w-md border border-white/30 dark:border-slate-700/30">
         <h3 className="text-lg font-bold mb-4 text-slate-900 dark:text-slate-100">Edit User Profile</h3>
         <div className="space-y-4">
           <div>
@@ -47,7 +47,7 @@ const EditUserModal: React.FC<{
           </div>
           <div>
             <label htmlFor="edit-office" className={formLabelStyle}>Office/Section</label>
-            <select id="edit-office" value={office} onChange={e => setOffice(e.target.value)} className={`${formInputStyle} disabled:bg-slate-200 dark:disabled:bg-slate-700 disabled:cursor-not-allowed`} required disabled={allOffices.length === 0}>
+            <select id="edit-office" value={office} onChange={e => setOffice(e.target.value)} className={`${formInputStyle} disabled:bg-slate-200/50 dark:disabled:bg-slate-700/50 disabled:cursor-not-allowed`} required disabled={allOffices.length === 0}>
               <option value="" disabled>-- Select office --</option>
               {allOffices.map(o => <option key={o} value={o}>{o}</option>)}
             </select>
@@ -65,8 +65,8 @@ const EditUserModal: React.FC<{
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-4">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-md hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600">Cancel</button>
-          <button onClick={handleSave} disabled={allOffices.length === 0} className="px-6 py-2 text-sm font-medium text-white bg-sky-600 rounded-md shadow-sm hover:bg-sky-700 disabled:bg-slate-400 dark:disabled:bg-slate-500 disabled:cursor-not-allowed">Save Changes</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white/40 rounded-lg hover:bg-white/60 dark:text-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-700/50">Cancel</button>
+          <button onClick={handleSave} disabled={allOffices.length === 0} className="px-6 py-2 text-sm font-medium text-white bg-sky-600 rounded-md shadow-lg hover:bg-sky-700 disabled:bg-slate-400 dark:disabled:bg-slate-500 disabled:cursor-not-allowed">Save Changes</button>
         </div>
       </div>
     </div>
@@ -94,7 +94,7 @@ const UserManagement: React.FC<Pick<SuperAdminPageProps, 'allUsers' | 'allOffice
         onDeleteUserRequest(user);
     };
 
-    const formInputStyle = "mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm shadow-sm placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
+    const formInputStyle = "mt-1 block w-full px-3 py-2 bg-white/40 dark:bg-slate-800/50 border border-white/30 dark:border-slate-700/50 rounded-lg text-sm shadow-sm placeholder-slate-500 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
     const formLabelStyle = "block text-sm font-semibold text-slate-700 dark:text-slate-300";
 
     return (
@@ -108,7 +108,7 @@ const UserManagement: React.FC<Pick<SuperAdminPageProps, 'allUsers' | 'allOffice
                 />
             )}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-1 bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 h-fit">
+                <div className="lg:col-span-1 bg-white/30 dark:bg-slate-900/40 backdrop-blur-lg p-6 rounded-2xl shadow-lg border border-white/30 dark:border-slate-700/30 h-fit">
                     <h2 className="text-lg font-semibold mb-4">Add New User</h2>
                     <form onSubmit={handleAddUser} className="space-y-4">
                         <div>
@@ -121,7 +121,7 @@ const UserManagement: React.FC<Pick<SuperAdminPageProps, 'allUsers' | 'allOffice
                         </div>
                         <div>
                             <label htmlFor="office" className={formLabelStyle}>Office/Section</label>
-                            <select id="office" value={office} onChange={e => setOffice(e.target.value)} className={`${formInputStyle} disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:cursor-not-allowed`} required disabled={allOffices.length === 0}>
+                            <select id="office" value={office} onChange={e => setOffice(e.target.value)} className={`${formInputStyle} disabled:bg-slate-100/50 dark:disabled:bg-slate-800/50 disabled:cursor-not-allowed`} required disabled={allOffices.length === 0}>
                                 <option value="" disabled>-- Select office --</option>
                                 {allOffices.map(o => <option key={o} value={o}>{o}</option>)}
                             </select>
@@ -137,22 +137,22 @@ const UserManagement: React.FC<Pick<SuperAdminPageProps, 'allUsers' | 'allOffice
                             {Object.values(UserRole).map(r => <option key={r} value={r}>{r}</option>)}
                             </select>
                         </div>
-                        <button type="submit" disabled={allOffices.length === 0} className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-sky-600 rounded-lg hover:bg-sky-700 shadow-sm disabled:bg-slate-400 dark:disabled:bg-slate-500 disabled:cursor-not-allowed">Add User</button>
+                        <button type="submit" disabled={allOffices.length === 0} className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-sky-600 rounded-lg hover:bg-sky-700 shadow-lg disabled:bg-slate-400 dark:disabled:bg-slate-500 disabled:cursor-not-allowed">Add User</button>
                     </form>
                 </div>
-                <div className="lg:col-span-2 bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+                <div className="lg:col-span-2 bg-white/30 dark:bg-slate-900/40 backdrop-blur-lg p-6 rounded-2xl shadow-lg border border-white/30 dark:border-slate-700/30">
                     <h2 className="text-lg font-semibold mb-4">Existing Users</h2>
-                    <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+                    <ul className="divide-y divide-white/20 dark:divide-slate-700/50">
                         {allUsers.map(user => (
                             <li key={user.id} className="py-4 flex justify-between items-center">
                                 <div>
                                     <p className="font-medium text-slate-900 dark:text-slate-100">{user.name}</p>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">{user.position} ({user.office}) - {user.role}</p>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400">{user.position} ({user.office}) - {user.role}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <button onClick={() => setEditingUser(user)} className="px-3 py-1 text-xs font-medium text-sky-700 bg-sky-100 rounded-md hover:bg-sky-200 dark:bg-sky-900/50 dark:text-sky-300 dark:hover:bg-sky-900">Edit</button>
+                                    <button onClick={() => setEditingUser(user)} className="px-3 py-1 text-xs font-medium text-sky-700 bg-sky-500/20 rounded-md hover:bg-sky-500/30 dark:bg-sky-500/20 dark:text-sky-300 dark:hover:bg-sky-500/30">Edit</button>
                                     {user.role !== UserRole.SUPER_ADMIN && (
-                                        <button onClick={() => handleDeleteUserClick(user)} className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900">Delete</button>
+                                        <button onClick={() => handleDeleteUserClick(user)} className="px-3 py-1 text-xs font-medium text-red-700 bg-red-500/20 rounded-md hover:bg-red-500/30 dark:bg-red-500/20 dark:text-red-300 dark:hover:bg-red-500/30">Delete</button>
                                     )}
                                 </div>
                             </li>
@@ -174,29 +174,29 @@ const OfficeManagement: React.FC<Pick<SuperAdminPageProps, 'allOffices' | 'onAdd
         setName('');
     };
 
-    const formInputStyle = "mt-1 block w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm shadow-sm placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
+    const formInputStyle = "mt-1 block w-full px-3 py-2 bg-white/40 dark:bg-slate-800/50 border border-white/30 dark:border-slate-700/50 rounded-lg text-sm shadow-sm placeholder-slate-500 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
     const formLabelStyle = "block text-sm font-semibold text-slate-700 dark:text-slate-300";
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1 bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 h-fit">
+            <div className="lg:col-span-1 bg-white/30 dark:bg-slate-900/40 backdrop-blur-lg p-6 rounded-2xl shadow-lg border border-white/30 dark:border-slate-700/30 h-fit">
                 <h2 className="text-lg font-semibold mb-4">Add New Office</h2>
                 <form onSubmit={handleAddOffice} className="space-y-4">
                     <div>
                         <label htmlFor="office-name" className={formLabelStyle}>Office/Section Name</label>
                         <input type="text" id="office-name" value={name} onChange={e => setName(e.target.value)} className={formInputStyle} required />
                     </div>
-                    <button type="submit" className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-sky-600 rounded-lg hover:bg-sky-700 shadow-sm">Add Office</button>
+                    <button type="submit" className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-sky-600 rounded-lg hover:bg-sky-700 shadow-lg">Add Office</button>
                 </form>
             </div>
-            <div className="lg:col-span-2 bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+            <div className="lg:col-span-2 bg-white/30 dark:bg-slate-900/40 backdrop-blur-lg p-6 rounded-2xl shadow-lg border border-white/30 dark:border-slate-700/30">
                 <h2 className="text-lg font-semibold mb-4">Existing Offices</h2>
                 {allOffices.length > 0 ? (
-                    <ul className="divide-y divide-slate-200 dark:divide-slate-800">
+                    <ul className="divide-y divide-white/20 dark:divide-slate-700/50">
                         {allOffices.map(office => (
                             <li key={office} className="py-3 flex justify-between items-center">
                                 <p className="font-medium text-slate-900 dark:text-slate-100">{office}</p>
-                                <button onClick={() => onDeleteOfficeRequest(office)} className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900">Delete</button>
+                                <button onClick={() => onDeleteOfficeRequest(office)} className="px-3 py-1 text-xs font-medium text-red-700 bg-red-500/20 rounded-md hover:bg-red-500/30 dark:bg-red-500/20 dark:text-red-300 dark:hover:bg-red-500/30">Delete</button>
                             </li>
                         ))}
                     </ul>
@@ -293,14 +293,14 @@ const AnalyticsDashboard: React.FC<{ allDocuments: Document[] }> = ({ allDocumen
     }, [allDocuments]);
 
     const StatCard = ({ title, value, subtext, icon, color }: { title: string, value: string, subtext?: string, icon: React.ReactNode, color: string }) => (
-        <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-start gap-5">
-            <div className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-lg ${color}`}>
+        <div className="bg-white/30 dark:bg-slate-900/40 backdrop-blur-lg p-6 rounded-2xl shadow-lg border border-white/30 dark:border-slate-700/30 flex items-start gap-5">
+            <div className={`w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-lg shadow-md ${color}`}>
                 {icon}
             </div>
             <div className="flex-grow">
-                <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-300">{title}</p>
                 <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1 truncate">{value}</p>
-                {subtext && <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{subtext}</p>}
+                {subtext && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{subtext}</p>}
             </div>
         </div>
     );
@@ -345,24 +345,24 @@ const AnalyticsDashboard: React.FC<{ allDocuments: Document[] }> = ({ allDocumen
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+                <div className="bg-white/30 dark:bg-slate-900/40 backdrop-blur-lg p-6 rounded-2xl shadow-lg border border-white/30 dark:border-slate-700/30">
                     <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">Documents by Status</h3>
                     <ul className="space-y-3">
                         {Object.entries(analyticsData.statusCounts).map(([status, count]) => (
                             <li key={status} className="flex justify-between items-center text-sm">
                                 <span className="font-medium text-slate-700 dark:text-slate-300">{status}</span>
-                                <span className="px-2 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-full font-semibold">{count}</span>
+                                <span className="px-2 py-0.5 bg-slate-200/50 dark:bg-slate-700/50 text-slate-800 dark:text-slate-200 rounded-full font-semibold">{count}</span>
                             </li>
                         ))}
                     </ul>
                 </div>
-                 <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+                 <div className="bg-white/30 dark:bg-slate-900/40 backdrop-blur-lg p-6 rounded-2xl shadow-lg border border-white/30 dark:border-slate-700/30">
                     <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-slate-100">Documents by Priority</h3>
                     <ul className="space-y-3">
                          {Object.entries(analyticsData.priorityCounts).map(([priority, count]) => (
                             <li key={priority} className="flex justify-between items-center text-sm">
                                 <span className="font-medium text-slate-700 dark:text-slate-300">{priority}</span>
-                                <span className="px-2 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-full font-semibold">{count}</span>
+                                <span className="px-2 py-0.5 bg-slate-200/50 dark:bg-slate-700/50 text-slate-800 dark:text-slate-200 rounded-full font-semibold">{count}</span>
                             </li>
                         ))}
                     </ul>
@@ -385,22 +385,22 @@ const TransactionLogs: React.FC<{ allDocuments: Document[] }> = ({ allDocuments 
     }, [allDocuments]);
 
     return (
-        <div className="bg-white dark:bg-slate-900/50 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div className="bg-white/30 dark:bg-slate-900/40 backdrop-blur-lg rounded-2xl shadow-lg border border-white/30 dark:border-slate-700/30 overflow-hidden">
              <div className="overflow-x-auto">
                 <table className="min-w-full">
-                    <thead className="bg-slate-50 dark:bg-slate-800/50">
+                    <thead className="bg-white/20 dark:bg-white/5">
                         <tr>
-                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Timestamp</th>
-                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Document</th>
-                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Action</th>
-                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">User</th>
-                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Remarks</th>
+                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Timestamp</th>
+                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Document</th>
+                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Action</th>
+                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">User</th>
+                            <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Remarks</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-slate-900/50">
+                    <tbody className="bg-transparent">
                         {allLogs.length > 0 ? allLogs.map(log => (
-                            <tr key={log.id} className="border-b border-slate-200 dark:border-slate-800">
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{new Date(log.timestamp).toLocaleString()}</td>
+                            <tr key={log.id} className="border-b border-white/20 dark:border-slate-700/50">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{new Date(log.timestamp).toLocaleString()}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
                                     <p className="max-w-xs truncate">{log.docTitle}</p>
                                     <p className="font-mono text-xs text-slate-500">{log.trackingNumber}</p>
@@ -430,7 +430,7 @@ export const SuperAdminPage: React.FC<SuperAdminPageProps> = (props) => {
   const TabButton = ({ tab, label }: { tab: AdminTab, label: string }) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${activeTab === tab ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'}`}
+      className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${activeTab === tab ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-white/20 dark:hover:bg-black/10'}`}
     >
       {label}
     </button>
@@ -439,7 +439,7 @@ export const SuperAdminPage: React.FC<SuperAdminPageProps> = (props) => {
   return (
     <div className="p-4 sm:p-8 space-y-8">
       <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Super Admin Panel</h1>
-      <div className="flex flex-wrap gap-2 sm:gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+      <div className="flex flex-wrap gap-2 sm:gap-4 border-b border-white/30 dark:border-slate-700/30 pb-4">
         <TabButton tab="users" label="User Management" />
         <TabButton tab="offices" label="Office Management" />
         <TabButton tab="analytics" label="Analytics" />

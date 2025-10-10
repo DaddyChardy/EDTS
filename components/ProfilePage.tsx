@@ -44,7 +44,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onUpdateU
     onBack();
   };
   
-  const formInputStyle = "mt-2 block w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm shadow-sm placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
+  const formInputStyle = "mt-2 block w-full px-4 py-2.5 bg-white/40 dark:bg-slate-800/50 border border-white/30 dark:border-slate-700/50 rounded-lg text-sm shadow-sm placeholder-slate-500 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
   const formLabelStyle = "block text-sm font-semibold text-slate-700 dark:text-slate-300";
 
   return (
@@ -55,15 +55,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onUpdateU
         </svg>
         Back to Dashboard
       </button>
-      <div className="bg-white dark:bg-slate-900/50 p-6 sm:p-10 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+      <div className="bg-white/30 dark:bg-slate-900/40 backdrop-blur-lg p-6 sm:p-10 rounded-2xl shadow-lg border border-white/30 dark:border-slate-700/30">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">My Profile</h1>
         <form onSubmit={handleSaveChanges} className="mt-8 space-y-8">
           <div className="flex items-center gap-6">
             <div className="relative">
               {previewUrl || currentUser.avatar_url ? (
-                <img src={previewUrl || currentUser.avatar_url} alt="Profile" className="h-24 w-24 rounded-full object-cover ring-4 ring-offset-2 ring-offset-white dark:ring-offset-slate-900/50 ring-sky-500" />
+                <img src={previewUrl || currentUser.avatar_url} alt="Profile" className="h-24 w-24 rounded-full object-cover ring-4 ring-offset-2 ring-offset-white/30 dark:ring-offset-slate-900/40 ring-sky-500" />
               ) : (
-                <div className="h-24 w-24 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center ring-4 ring-offset-2 ring-offset-white dark:ring-offset-slate-900/50 ring-sky-500">
+                <div className="h-24 w-24 rounded-full bg-slate-200/50 dark:bg-slate-700/50 flex items-center justify-center ring-4 ring-offset-2 ring-offset-white/30 dark:ring-offset-slate-900/40 ring-sky-500">
                     <UserIcon className="w-12 h-12 text-slate-500 dark:text-slate-400" />
                 </div>
               )}
@@ -99,19 +99,19 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ currentUser, onUpdateU
             </div>
             <div>
               <label className={formLabelStyle}>Office</label>
-              <input type="text" value={currentUser.office} className={`${formInputStyle} bg-slate-100 dark:bg-slate-800 cursor-not-allowed`} disabled />
+              <input type="text" value={currentUser.office} className={`${formInputStyle} bg-slate-100/50 dark:bg-slate-800/50 cursor-not-allowed`} disabled />
             </div>
              <div>
               <label className={formLabelStyle}>Role</label>
-              <input type="text" value={currentUser.role} className={`${formInputStyle} bg-slate-100 dark:bg-slate-800 cursor-not-allowed`} disabled />
+              <input type="text" value={currentUser.role} className={`${formInputStyle} bg-slate-100/50 dark:bg-slate-800/50 cursor-not-allowed`} disabled />
             </div>
           </div>
 
-          <div className="flex justify-end gap-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-            <button type="button" onClick={onBack} className="px-5 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700">Cancel</button>
+          <div className="flex justify-end gap-4 pt-4 border-t border-white/30 dark:border-slate-700/50">
+            <button type="button" onClick={onBack} className="px-5 py-2.5 text-sm font-semibold text-slate-700 bg-white/40 rounded-lg hover:bg-white/60 dark:text-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-700/50">Cancel</button>
             <button
               type="submit"
-              className="px-6 py-2.5 text-sm font-semibold text-white bg-sky-600 rounded-lg shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:bg-slate-400 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 text-sm font-semibold text-white bg-sky-600 rounded-lg shadow-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 disabled:bg-slate-400 disabled:cursor-not-allowed"
               disabled={isUploading}
             >
               {isUploading ? 'Saving...' : 'Save Changes'}

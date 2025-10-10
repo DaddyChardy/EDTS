@@ -75,12 +75,12 @@ export const CreateDocumentForm: React.FC<CreateDocumentFormProps> = ({ currentU
     }
   };
 
-  const formInputStyle = "mt-2 block w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm shadow-sm placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
+  const formInputStyle = "mt-2 block w-full px-4 py-2.5 bg-white/40 dark:bg-slate-800/50 border border-white/30 dark:border-slate-700/50 rounded-lg text-sm shadow-sm placeholder-slate-500 dark:placeholder-slate-400 dark:text-slate-200 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500";
   const formLabelStyle = "block text-sm font-semibold text-slate-700 dark:text-slate-300";
 
   return (
     <div className="p-4 sm:p-8">
-      <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl mx-auto bg-white dark:bg-slate-900/50 p-6 sm:p-10 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+      <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl mx-auto bg-white/30 dark:bg-slate-900/40 backdrop-blur-lg p-6 sm:p-10 rounded-2xl shadow-lg border border-white/30 dark:border-slate-700/30">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">{isEditMode ? 'Edit Document' : 'Create New Document'}</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -114,7 +114,7 @@ export const CreateDocumentForm: React.FC<CreateDocumentFormProps> = ({ currentU
         {isClassifying && <div className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">✨ Gemini is classifying your document...</div>}
         
         {aiSuggestion && (
-            <div className="p-4 bg-sky-50 dark:bg-sky-900/50 border-l-4 border-sky-400 dark:border-sky-600">
+            <div className="p-4 bg-sky-500/10 border-l-4 border-sky-400 dark:border-sky-600 rounded-r-lg">
                 <h4 className="font-semibold text-sky-800 dark:text-sky-300">AI Suggestion ✨</h4>
                 <p className="text-sm text-sky-700 dark:text-sky-400 mt-1">
                     Category: <span className="font-medium">{aiSuggestion.category}</span>, 
@@ -128,19 +128,19 @@ export const CreateDocumentForm: React.FC<CreateDocumentFormProps> = ({ currentU
             <label className={formLabelStyle}>Delivery Type</label>
             <div className="mt-2 flex gap-6">
                 <label className="flex items-center">
-                    <input type="radio" name="deliveryType" value="Internal" checked={deliveryType === 'Internal'} onChange={() => setDeliveryType('Internal')} className="focus:ring-sky-500 h-4 w-4 text-sky-600 border-gray-300 dark:border-slate-500 bg-slate-100 dark:bg-slate-700" />
+                    <input type="radio" name="deliveryType" value="Internal" checked={deliveryType === 'Internal'} onChange={() => setDeliveryType('Internal')} className="focus:ring-sky-500 h-4 w-4 text-sky-600 border-gray-300 dark:border-slate-500 bg-transparent" />
                     <span className="ml-3 text-sm text-slate-700 dark:text-slate-300">Internal</span>
                 </label>
                 <label className="flex items-center">
-                    <input type="radio" name="deliveryType" value="External" checked={deliveryType === 'External'} onChange={() => setDeliveryType('External')} className="focus:ring-sky-500 h-4 w-4 text-sky-600 border-gray-300 dark:border-slate-500 bg-slate-100 dark:bg-slate-700" />
+                    <input type="radio" name="deliveryType" value="External" checked={deliveryType === 'External'} onChange={() => setDeliveryType('External')} className="focus:ring-sky-500 h-4 w-4 text-sky-600 border-gray-300 dark:border-slate-500 bg-transparent" />
                     <span className="ml-3 text-sm text-slate-700 dark:text-slate-300">External</span>
                 </label>
             </div>
         </div>
 
-        <div className="flex justify-end gap-4 pt-4 border-t border-slate-200 dark:border-slate-800">
-          <button type="button" onClick={onCancel} className="px-5 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700">Cancel</button>
-          <button type="submit" className="px-6 py-2.5 text-sm font-semibold text-white bg-sky-600 rounded-lg shadow-sm hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
+        <div className="flex justify-end gap-4 pt-4 border-t border-white/30 dark:border-slate-700/30">
+          <button type="button" onClick={onCancel} className="px-5 py-2.5 text-sm font-semibold text-slate-700 bg-white/40 rounded-lg hover:bg-white/60 dark:text-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-700/50">Cancel</button>
+          <button type="submit" className="px-6 py-2.5 text-sm font-semibold text-white bg-sky-600 rounded-lg shadow-lg hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500">
             {isEditMode ? 'Save Changes' : 'Save as Draft'}
           </button>
         </div>

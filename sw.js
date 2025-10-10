@@ -1,8 +1,9 @@
+
 const CACHE_NAME = 'dar-edts-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
-  'https://images.seeklogo.com/logo-png/35/1/department-of-agrarian-reform-logo-png_seeklogo-354283.png'
+  '/darlogo.png'
 ];
 
 // Install a service worker

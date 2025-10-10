@@ -1,3 +1,6 @@
+
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -470,7 +473,7 @@ function App() {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search by title, tracking #, sender..."
-                        className="block w-full pl-12 pr-3 py-3 border border-slate-300 rounded-xl leading-5 bg-white dark:bg-slate-800/50 dark:border-slate-700 text-slate-900 dark:text-slate-200 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:placeholder-slate-400 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
+                        className="block w-full pl-12 pr-3 py-3 border border-white/30 dark:border-slate-700/30 rounded-xl leading-5 bg-white/40 dark:bg-slate-800/50 text-slate-900 dark:text-slate-200 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:placeholder-slate-400 focus:ring-1 focus:ring-sky-500 focus:border-sky-500 sm:text-sm"
                     />
                 </div>
                 <DocumentList documents={filteredDocuments} onDocumentSelect={handleDocumentSelect} />
@@ -525,9 +528,9 @@ function App() {
   
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-slate-100 dark:bg-slate-950">
+      <div className="flex items-center justify-center min-h-screen bg-slate-200 dark:bg-slate-950">
         <div className="flex flex-col items-center gap-4">
-            <img src="https://images.seeklogo.com/logo-png/35/1/department-of-agrarian-reform-logo-png_seeklogo-354283.png" alt="DAR Logo" className="h-20 w-20 animate-pulse" />
+            <img src="/darlogo.png" alt="DAR Logo" className="h-20 w-20 animate-pulse" />
             <div className="text-lg font-semibold text-slate-700 dark:text-slate-300">Loading Application...</div>
         </div>
       </div>
@@ -553,7 +556,7 @@ function App() {
   }
 
   return (
-    <div className="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 min-h-screen font-sans">
+    <div className="bg-transparent text-slate-900 dark:text-slate-300 min-h-screen font-sans">
       <Sidebar 
         currentPage={currentPage} 
         onNavigate={handleNavigate} 
@@ -611,14 +614,14 @@ function App() {
 
       {/* Print Preview Modal */}
       {printPreviewDoc && (
-        <div id="print-overlay" className="fixed inset-0 bg-black/60 dark:bg-black/70 z-50 flex items-center justify-center p-4 overflow-auto">
-            <div id="print-modal-content" className="relative bg-white dark:bg-slate-800 p-6 rounded-lg shadow-xl w-full max-w-4xl border border-slate-200 dark:border-slate-700">
+        <div id="print-overlay" className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-auto">
+            <div id="print-modal-content" className="relative bg-white/70 dark:bg-slate-800/70 backdrop-blur-xl p-6 rounded-lg shadow-xl w-full max-w-4xl border border-white/30 dark:border-slate-700/30">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Print QR Code</h3>
                     <button onClick={() => setPrintPreviewDoc(null)} className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200">&times;</button>
                 </div>
                 
-                <div className="printable-area p-4">
+                <div className="printable-area p-4 bg-white rounded-md">
                     <div className="qr-container">
                          <img 
                             src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(printPreviewDoc.trackingNumber)}`} 
@@ -628,9 +631,9 @@ function App() {
                     </div>
                 </div>
 
-                <div className="mt-6 flex justify-end gap-4 border-t border-slate-200 dark:border-slate-600 pt-4">
-                    <button onClick={() => setPrintPreviewDoc(null)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-md hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600">Close</button>
-                    <button onClick={handleActualPrint} className="px-6 py-2 text-sm font-medium text-white bg-sky-600 rounded-md shadow-sm hover:bg-sky-700">Print Now</button>
+                <div className="mt-6 flex justify-end gap-4 border-t border-white/30 dark:border-slate-600/50 pt-4">
+                    <button onClick={() => setPrintPreviewDoc(null)} className="px-4 py-2 text-sm font-medium text-slate-700 bg-white/40 rounded-lg hover:bg-white/60 dark:text-slate-200 dark:bg-slate-800/50 dark:hover:bg-slate-700/50">Close</button>
+                    <button onClick={handleActualPrint} className="px-6 py-2 text-sm font-medium text-white bg-sky-600 rounded-md shadow-lg hover:bg-sky-700">Print Now</button>
                 </div>
             </div>
         </div>
