@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Notification } from '../types';
 import { UserIcon } from './icons/UserIcon';
@@ -57,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, theme, on
                 <MenuIcon className="w-6 h-6" />
             </button>
             <div className="lg:hidden flex items-center gap-2">
-                <img src="/darlogo.png" alt="DAR Logo" className="h-8 w-8" />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Department_of_Agrarian_Reform_%28DAR%29.svg/490px-Department_of_Agrarian_Reform_%28DAR%29.svg.png?20170204121737" alt="DAR Logo" className="h-8 w-8" />
                 <span className="font-bold text-lg text-slate-800 dark:text-white">DAR EDTS</span>
             </div>
         </div>

@@ -45,7 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpe
       <div className="h-full px-4 py-6 overflow-y-auto bg-white/30 dark:bg-slate-900/40 backdrop-blur-xl border-r border-white/30 dark:border-slate-700/30">
         <div className="flex items-center justify-between ps-2.5 mb-8">
             <div className="flex items-center">
-                <img src="/darlogo.png" alt="DAR SDS Logo" className="h-10 w-10 mr-3" />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Department_of_Agrarian_Reform_%28DAR%29.svg/490px-Department_of_Agrarian_Reform_%28DAR%29.svg.png?20170204121737" alt="DAR Logo" className="h-10 w-10 mr-3" />
                 <span className="self-center text-xl font-bold whitespace-nowrap text-slate-800 dark:text-white">DAR EDTS</span>
             </div>
             <button onClick={onClose} className="lg:hidden p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200">

@@ -1,9 +1,7 @@
-
-const CACHE_NAME = 'dar-edts-cache-v1';
+const CACHE_NAME = 'dar-edts-cache-v6';
 const urlsToCache = [
   '/',
-  '/index.html',
-  '/darlogo.png'
+  '/index.html'
 ];
 
 // Install a service worker

@@ -1,6 +1,13 @@
 
 
 
+
+
+
+
+
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -530,7 +537,7 @@ function App() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-200 dark:bg-slate-950">
         <div className="flex flex-col items-center gap-4">
-            <img src="/darlogo.png" alt="DAR Logo" className="h-20 w-20 animate-pulse" />
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Department_of_Agrarian_Reform_%28DAR%29.svg/490px-Department_of_Agrarian_Reform_%28DAR%29.svg.png?20170204121737" alt="DAR Logo" className="h-20 w-20 animate-pulse" />
             <div className="text-lg font-semibold text-slate-700 dark:text-slate-300">Loading Application...</div>
         </div>
       </div>

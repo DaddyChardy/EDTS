@@ -1,6 +1,13 @@
 
 
 
+
+
+
+
+
+
+
 import React, { useState } from 'react';
 import { User } from '../types';
 
@@ -23,7 +30,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, users }) => {
     <main className="w-full h-screen flex items-center justify-center bg-transparent p-4">
         <div className="w-full max-w-md">
             <div className="text-center mb-8">
-                <img src="/darlogo.png" alt="DAR Logo" className="h-24 w-24 mx-auto mb-4" />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Department_of_Agrarian_Reform_%28DAR%29.svg/490px-Department_of_Agrarian_Reform_%28DAR%29.svg.png?20170204121737" alt="DAR Logo" className="h-24 w-24 mx-auto mb-4" />
                 <h1 className="text-3xl font-bold text-slate-900 dark:text-white">DAR EDTS</h1>
                 <p className="text-md text-slate-600 dark:text-slate-300 mt-1">Enterprise Document Tracking System</p>
             </div>
